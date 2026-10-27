@@ -63,6 +63,7 @@ body{
   border-bottom:1px solid var(--line);
 }
 .top .wrap{padding:18px 20px 16px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
 h1{margin:0;font-size:19px;font-weight:650;letter-spacing:.2px}
 .sub{margin:4px 0 0;font-size:12.5px;color:var(--text-3)}
 main{padding-bottom:40px}
@@ -94,13 +95,46 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 }
 .btn:hover{background:var(--surface-2)}
 .btn:active{transform:scale(.98)}
+.btn:disabled{cursor:not-allowed}
+.btn.loading{opacity:.6;cursor:progress}
 .btn.primary{
   background:var(--accent);border-color:var(--accent);color:#fff;
   padding:11px 20px;font-weight:600;
 }
 .btn.primary:hover{filter:brightness(1.06);background:var(--accent)}
 .btn.primary:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.gear{font-size:12.5px;padding:6px 12px}
 .hint{margin:10px 2px 0;font-size:12.5px;color:var(--text-3)}
+.settings{
+  margin:0 0 18px;padding:16px 16px 14px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  animation:fadeInUp .22s ease both;
+}
+.settings-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:12px}
+.settings-head strong{font-size:14px}
+.settings-tip{font-size:12px;color:var(--text-3)}
+.field-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:13px;color:var(--text-2)}
+.field-row>span{width:74px;flex:none}
+.field-row input{
+  flex:1;min-width:0;
+  font:inherit;font-size:13px;
+  padding:8px 11px;
+  border-radius:9px;
+  border:1px solid var(--line);
+  background:var(--surface-2);
+  color:var(--text);
+  outline:none;
+  box-shadow:none;
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.field-row input::placeholder{color:var(--text-3)}
+.field-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface)}
+.settings-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.settings-actions .btn{padding:7px 14px}
+.settings-state{font-size:12px;color:var(--text-3)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .tab{
   display:inline-flex;align-items:center;gap:6px;
@@ -150,8 +184,12 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 .ai-summary{
   margin-top:8px;padding:10px 12px;
   background:var(--surface-2);border-radius:10px;
-  font-size:13.5px;color:var(--text-2)
+  font-size:13.5px;color:var(--text-2);
+  line-height:1.65;word-break:break-word;
+  animation:fadeInUp .22s ease both
 }
+.ai-summary.loading{color:var(--text-3)}
+.ai-summary.error{background:var(--warn-soft);color:var(--warn)}
 .card-content{
   margin:6px 0 0;font-size:13.5px;color:var(--text-2);
   word-break:break-word;
@@ -175,9 +213,12 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 <body>
 
 <header class="top">
-  <div class="wrap">
-    <h1>收藏消化助手</h1>
-    <p class="sub">主动投递 · 本地存储 · 用完即走</p>
+  <div class="wrap topbar">
+    <div>
+      <h1>收藏消化助手</h1>
+      <p class="sub">主动投递 · 本地存储 · 用完即走</p>
+    </div>
+    <button class="btn gear" id="settingsToggle">AI 设置</button>
   </div>
 </header>
 
@@ -187,7 +228,31 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
       <input id="input" type="text" placeholder="粘贴链接，或写下想消化的内容…" autocomplete="off" spellcheck="false">
       <button id="submit" class="btn primary" disabled>投递</button>
     </div>
-    <p class="hint">不做跨域请求、不申请任何读取权限，全部数据仅保存在本机浏览器。</p>
+    <p class="hint">数据仅保存在本机浏览器；只有你点击「AI 提炼」时，该条内容才会发送给你自己配置的模型服务。</p>
+  </section>
+
+  <section class="settings" id="settings" hidden>
+    <div class="settings-head">
+      <strong>AI 提炼设置</strong>
+      <span class="settings-tip">兼容 OpenAI 格式接口，配置仅存本机 localStorage</span>
+    </div>
+    <label class="field-row">
+      <span>API 地址</span>
+      <input id="cfgBase" type="text" placeholder="https://api.openai.com/v1" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="field-row">
+      <span>模型名称</span>
+      <input id="cfgModel" type="text" placeholder="gpt-4o-mini" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="field-row">
+      <span>API Key</span>
+      <input id="cfgKey" type="text" placeholder="sk-..." autocomplete="off" spellcheck="false">
+    </label>
+    <div class="settings-actions">
+      <button class="btn primary" id="cfgSave">保存配置</button>
+      <button class="btn" id="cfgClear">清空 Key</button>
+      <span class="settings-state" id="cfgState"></span>
+    </div>
   </section>
 
   <nav class="tabs" id="tabs">
@@ -205,7 +270,11 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 (function(){
   var KEY_CARDS='favorite_digester_cards';
   var KEY_META='favorite_digester_meta';
+  var KEY_AI='favorite_digester_ai';
   var VERSION=1;
+  var REQUEST_TIMEOUT=60000;
+  var MAX_INPUT=4000;
+  var SYSTEM_PROMPT='你是收藏内容消化助手。请用中文提炼这段收藏内容的要点与可用结论，2-3 句、不超过 120 字，不要客套话，直接输出结论。';
   var STATUS_TEXT={pending:'待消化',done:'已消化',archived:'归档'};
   var EMPTY_TEXT={
     pending:'还没有待消化的内容，投递第一条吧。',
@@ -213,13 +282,25 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
     archived:'归档区是空的，这里存放你暂时不想处理的内容。'
   };
 
-  var state={cards:[],meta:{seqCounter:1,version:VERSION}};
+  var state={
+    cards:[],
+    meta:{seqCounter:1,version:VERSION},
+    ai:{baseUrl:'',model:'',apiKey:''}
+  };
   var tab='pending';
 
   var list=document.getElementById('list');
   var tabs=document.getElementById('tabs');
   var input=document.getElementById('input');
   var submitBtn=document.getElementById('submit');
+  var settings=document.getElementById('settings');
+  var settingsToggle=document.getElementById('settingsToggle');
+  var cfgBase=document.getElementById('cfgBase');
+  var cfgModel=document.getElementById('cfgModel');
+  var cfgKey=document.getElementById('cfgKey');
+  var cfgSave=document.getElementById('cfgSave');
+  var cfgClear=document.getElementById('cfgClear');
+  var cfgState=document.getElementById('cfgState');
 
   function esc(s){
     return String(s).replace(/[&<>"']/g,function(m){
@@ -255,13 +336,19 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
     return c&&typeof c==='object'&&typeof c.id==='string'&&typeof c.content==='string'
       &&STATUS_TEXT[c.status]!==undefined;
   }
+  function chatEndpoint(base){
+    var b=String(base).trim().replace(/\/+$/,'');
+    return /\/chat\/completions$/.test(b)?b:b+'/chat/completions';
+  }
 
   function load(){
     try{
       var rawCards=localStorage.getItem(KEY_CARDS);
       var rawMeta=localStorage.getItem(KEY_META);
+      var rawAi=localStorage.getItem(KEY_AI);
       var cards=rawCards?JSON.parse(rawCards):[];
       var meta=rawMeta?JSON.parse(rawMeta):null;
+      var ai=rawAi?JSON.parse(rawAi):null;
       state.cards=Array.isArray(cards)?cards.filter(isValidCard).map(function(c){
         return {
           id:c.id,
@@ -271,17 +358,23 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
           title:typeof c.title==='string'&&c.title?c.title:(c.type==='link'?hostOf(c.content):shorten(c.content,40)),
           status:c.status,
           createdAt:Number(c.createdAt)||Date.now(),
-          updatedAt:Number(c.updatedAt)||Number(c.createdAt)||Date.now()
+          updatedAt:Number(c.updatedAt)||Number(c.createdAt)||Date.now(),
+          summary:typeof c.summary==='string'?c.summary:'',
+          summaryAt:Number(c.summaryAt)||0
         };
       }):[];
       state.meta=(meta&&typeof meta==='object')
         ?{seqCounter:Number(meta.seqCounter)||1,version:Number(meta.version)||VERSION}
         :{seqCounter:1,version:VERSION};
+      state.ai=(ai&&typeof ai==='object')
+        ?{baseUrl:String(ai.baseUrl||''),model:String(ai.model||''),apiKey:String(ai.apiKey||'')}
+        :{baseUrl:'',model:'',apiKey:''};
       var maxSeq=state.cards.reduce(function(m,c){return Math.max(m,c.seq);},0);
       if(state.meta.seqCounter<=maxSeq)state.meta.seqCounter=maxSeq+1;
     }catch(e){
       state.cards=[];
       state.meta={seqCounter:1,version:VERSION};
+      state.ai={baseUrl:'',model:'',apiKey:''};
     }
   }
   function save(){
@@ -290,6 +383,30 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
       localStorage.setItem(KEY_META,JSON.stringify(state.meta));
     }catch(e){}
   }
+  function saveAI(){
+    try{localStorage.setItem(KEY_AI,JSON.stringify(state.ai));}catch(e){}
+  }
+
+  function fillSettings(){
+    cfgBase.value=state.ai.baseUrl;
+    cfgModel.value=state.ai.model;
+    cfgKey.value=state.ai.apiKey;
+  }
+  function openSettings(focusEmpty){
+    settings.hidden=false;
+    fillSettings();
+    if(!focusEmpty)return;
+    var target=!state.ai.baseUrl?cfgBase:(!state.ai.model?cfgModel:cfgKey);
+    target.focus();
+  }
+  function toggleSettings(){
+    if(settings.hidden){
+      openSettings(false);
+    }else{
+      settings.hidden=true;
+    }
+  }
+  function setConfigState(msg){cfgState.textContent=msg;}
 
   function cardHTML(c){
     var actions=[];
@@ -299,9 +416,12 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
     }else{
       actions.push('<button class="btn" data-act="restore">恢复</button>');
     }
-    actions.push('<button class="btn ai" data-act="ai">AI 提炼</button>');
+    actions.push('<button class="btn ai" data-act="ai">'+(c.summary?'重新提炼':'AI 提炼')+'</button>');
 
     var showContent=!(c.type==='text'&&c.content.length<=40);
+    var summaryHTML=c.summary
+      ?'<div class="ai-summary">'+esc(c.summary)+'</div>'
+      :'<div class="ai-summary" hidden></div>';
 
     return '<article class="card" data-id="'+esc(c.id)+'">'
       +'<div class="card-head">'
@@ -310,7 +430,7 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
         +'<span class="time" data-ts="'+c.createdAt+'">'+relTime(c.createdAt)+'</span>'
       +'</div>'
       +'<h3 class="card-title" title="'+esc(c.content)+'">'+esc(c.title)+'</h3>'
-      +'<div class="ai-summary" hidden></div>'
+      +summaryHTML
       +(showContent?'<p class="card-content">'+esc(c.content)+'</p>':'')
       +'<div class="card-actions">'+actions.join('')+'</div>'
       +'</article>';
@@ -352,12 +472,88 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
       title:isLink?hostOf(v):shorten(v,40),
       status:'pending',
       createdAt:Date.now(),
-      updatedAt:Date.now()
+      updatedAt:Date.now(),
+      summary:'',
+      summaryAt:0
     };
     state.cards.unshift(card);
     save();
     tab='pending';
     render();
+  }
+
+  function describeError(err){
+    var msg=err&&err.message?err.message:'请求被中断';
+    if(err&&err.name==='AbortError')return '请求超时（'+Math.round(REQUEST_TIMEOUT/1000)+'秒）';
+    if(/failed to fetch|networkerror|load failed/i.test(msg))return '网络或跨域被拒绝，请确认该 API 允许浏览器直接访问（CORS）';
+    return msg;
+  }
+
+  async function runAI(rec,cardEl,btn){
+    if(!state.ai.baseUrl||!state.ai.model||!state.ai.apiKey){
+      openSettings(true);
+      setConfigState('请先填写并保存 API 地址、模型与 API Key');
+      return;
+    }
+    var box=cardEl.querySelector('.ai-summary');
+    var ctrl=new AbortController();
+    var timer=setTimeout(function(){ctrl.abort();},REQUEST_TIMEOUT);
+
+    btn.disabled=true;
+    btn.classList.add('loading');
+    btn.textContent='提炼中…';
+    box.hidden=false;
+    box.className='ai-summary loading';
+    box.textContent='正在请求模型，请稍候…';
+
+    try{
+      var res=await fetch(chatEndpoint(state.ai.baseUrl),{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':'Bearer '+state.ai.apiKey
+        },
+        body:JSON.stringify({
+          model:state.ai.model,
+          temperature:0.3,
+          messages:[
+            {role:'system',content:SYSTEM_PROMPT},
+            {role:'user',content:rec.content.slice(0,MAX_INPUT)}
+          ]
+        }),
+        signal:ctrl.signal
+      });
+
+      if(!res.ok){
+        var detail='';
+        try{detail=(await res.text()).slice(0,160);}catch(e2){}
+        throw new Error('HTTP '+res.status+(detail?' · '+detail:''));
+      }
+
+      var data=await res.json();
+      var text=data&&data.choices&&data.choices[0]&&data.choices[0].message
+        ?data.choices[0].message.content:'';
+      if(!text||!String(text).trim())throw new Error('模型返回内容为空');
+
+      rec.summary=String(text).trim();
+      rec.summaryAt=Date.now();
+      save();
+
+      box.className='ai-summary';
+      box.textContent=rec.summary;
+      btn.disabled=false;
+      btn.classList.remove('loading');
+      btn.textContent='重新提炼';
+      setConfigState('提炼完成，结果已保存到本机');
+    }catch(err){
+      box.className='ai-summary error';
+      box.textContent='提炼失败：'+describeError(err)+'（可再次点击重试）';
+      btn.disabled=false;
+      btn.classList.remove('loading');
+      btn.textContent=rec.summary?'重新提炼':'AI 提炼';
+    }finally{
+      clearTimeout(timer);
+    }
   }
 
   list.addEventListener('click',function(e){
@@ -371,7 +567,8 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 
     var act=btn.dataset.act;
     if(act==='ai'){
-      alert('AI 功能待接入');
+      if(btn.disabled)return;
+      runAI(rec,cardEl,btn);
       return;
     }
     rec.status=act==='done'?'done':act==='archive'?'archived':'pending';
@@ -388,6 +585,30 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
     if(!t)return;
     tab=t.dataset.tab;
     render();
+  });
+
+  settingsToggle.addEventListener('click',toggleSettings);
+  cfgSave.addEventListener('click',function(){
+    state.ai={
+      baseUrl:cfgBase.value.trim().replace(/\/+$/,''),
+      model:cfgModel.value.trim(),
+      apiKey:cfgKey.value.trim()
+    };
+    saveAI();
+    setConfigState(state.ai.baseUrl&&state.ai.model&&state.ai.apiKey
+      ?'配置已保存，可点击卡片上的「AI 提炼」'
+      :'已保存，但配置不完整');
+  });
+  cfgClear.addEventListener('click',function(){
+    state.ai.apiKey='';
+    saveAI();
+    fillSettings();
+    setConfigState('API Key 已从本机清除');
+  });
+  [cfgBase,cfgModel,cfgKey].forEach(function(el){
+    el.addEventListener('keydown',function(e){
+      if(e.key==='Enter')cfgSave.click();
+    });
   });
 
   input.addEventListener('input',function(){
