@@ -53,6 +53,7 @@ body{
   position:sticky;top:0;z-index:20;
   background:var(--paper);
   border-bottom:var(--border-w) dashed var(--ink);
+  transition:background-color .3s ease,border-color .3s ease;
 }
 .top .wrap{padding:16px 20px 14px;position:relative}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -68,6 +69,29 @@ main.wrap::before{
   content:"";position:absolute;left:8px;top:8px;bottom:60px;
   width:2px;background:var(--margin);opacity:.65;
 }
+
+/* 视图切换 */
+.view-switch{
+  display:flex;gap:10px;flex-wrap:wrap;
+  max-width:720px;margin:0 auto;
+  padding:0 20px 12px;
+}
+.view-tab{
+  font:inherit;font-size:13px;font-weight:700;
+  padding:5px 14px;
+  border:var(--border-w) dashed var(--ink);
+  border-radius:var(--radius-sm);
+  background:var(--paper-2);color:var(--ink);
+  cursor:pointer;
+  transform:rotate(-.6deg);
+  box-shadow:2px 2px 0 var(--marker-teal);
+  transition:background .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease,transform .2s ease;
+}
+.view-tab:nth-child(even){transform:rotate(.6deg)}
+.view-tab:hover{box-shadow:3px 3px 0 var(--marker-red);transform:translate(1px,1px) rotate(-.6deg)}
+.view-tab:active{box-shadow:none;transform:translate(2px,2px) rotate(-.6deg)}
+.view-tab:focus-visible{outline:none;box-shadow:2px 2px 0 var(--marker-teal)}
+.view-tab.active{background:var(--marker-yellow);box-shadow:3px 3px 0 var(--marker-red)}
 
 /* 投递区 */
 .compose{margin:24px 0 18px;position:relative}
@@ -463,6 +487,53 @@ input[type=text].sending::placeholder{color:transparent}
   border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
 }
 
+/* 灵感星空（夜间手账） */
+.sky-view{
+  position:relative;
+  max-width:1000px;margin:0 auto;
+  padding:8px 20px 24px;
+  height:520px;
+}
+.sky-canvas{
+  display:block;width:100%;height:100%;
+  background:#1a1c2c;
+  border:var(--border-w) dashed rgba(255,254,245,.4);
+  border-radius:var(--radius-sm);
+  box-shadow:6px 6px 0 rgba(78,205,196,.35);
+}
+.sky-hint{
+  position:absolute;left:34px;top:18px;
+  font-size:12px;font-style:italic;letter-spacing:.5px;
+  color:rgba(255,254,245,.55);
+  pointer-events:none;
+  text-shadow:0 1px 0 rgba(0,0,0,.45);
+}
+
+/* 星空模式下的纸张/顶部变体 */
+body.sky-mode{background-color:#1a1c2c;background-image:none}
+body.sky-mode .top{background:#1a1c2c;border-bottom-color:rgba(255,254,245,.22)}
+body.sky-mode h1,body.sky-mode .sub{color:#f2ead6}
+body.sky-mode h1::after{background:var(--marker-teal)}
+body.sky-mode .gear{
+  color:#f2ead6;border-color:rgba(255,254,245,.45);
+  background:rgba(255,255,255,.06);
+  box-shadow:2px 2px 0 rgba(78,205,196,.6);
+}
+body.sky-mode .gear:hover{box-shadow:4px 4px 0 rgba(255,107,107,.7)}
+body.sky-mode .view-tab{
+  color:rgba(242,234,214,.62);
+  border-color:rgba(255,254,245,.32);
+  background:rgba(255,255,255,.05);
+  box-shadow:none;
+}
+body.sky-mode .view-tab:hover{color:#f2ead6;background:rgba(255,255,255,.1)}
+body.sky-mode .view-tab.active{
+  color:#1a1c2c;background:var(--marker-yellow);
+  border-color:var(--marker-yellow);
+  box-shadow:2px 2px 0 var(--marker-teal);
+}
+body.sky-mode .monster{display:none}
+
 @keyframes breathe{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(.8deg)}}
 @keyframes chew{
   0%,100%{transform:translateY(0) scale(1,1)}
@@ -481,6 +552,8 @@ input[type=text].sending::placeholder{color:transparent}
 @media (max-width:520px){
   .monster{width:92px;right:10px;bottom:10px}
   main{padding-bottom:120px}
+  .sky-view{padding:6px 12px 18px}
+  .sky-hint{left:22px;top:14px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
@@ -497,9 +570,13 @@ input[type=text].sending::placeholder{color:transparent}
     </div>
     <button class="btn gear" id="settingsToggle">⚙ AI 设置</button>
   </div>
+  <div class="view-switch" id="viewSwitch">
+    <button class="view-tab active" data-view="list">📋 手账列表</button>
+    <button class="view-tab" data-view="sky">🌌 灵感星空</button>
+  </div>
 </header>
 
-<main class="wrap">
+<main class="wrap" id="listView">
   <section class="compose">
     <div class="field">
       <input id="input" type="text" placeholder="粘贴链接，或写下想消化的内容…" autocomplete="off" spellcheck="false">
@@ -542,6 +619,11 @@ input[type=text].sending::placeholder{color:transparent}
 
   <p class="foot">数据保存在本机 localStorage，清除浏览器数据会一并清除。</p>
 </main>
+
+<section class="sky-view" id="skyView" hidden>
+  <canvas class="sky-canvas" id="skyCanvas"></canvas>
+  <div class="sky-hint">✨ 光点会自己慢慢游荡</div>
+</section>
 
 <div class="monster" id="monster" aria-hidden="true">
   <div class="monster-thought" id="monsterThought">💡</div>
@@ -645,6 +727,19 @@ input[type=text].sending::placeholder{color:transparent}
   var popTimer=null;
   var delivering=false;
   var reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var viewSwitch=document.getElementById('viewSwitch');
+  var listView=document.getElementById('listView');
+  var skyView=document.getElementById('skyView');
+  var canvas=document.getElementById('skyCanvas');
+  var ctx=canvas.getContext('2d');
+  var view='list';
+  var particles=[];
+  var noisePattern=null;
+  var animId=null;
+  var worldW=0;
+  var worldH=0;
+  var COLORS=['#4ecdc4','#ff6b6b','#ffd93d'];
 
   function esc(s){
     return String(s).replace(/[&<>"']/g,function(m){
@@ -977,6 +1072,215 @@ input[type=text].sending::placeholder{color:transparent}
       setTimeout(function(){el.classList.remove('flash');},1200);
     });
   }
+
+  /* ---------- 灵感星空：画布与光点物理 ---------- */
+  function pseudo(v){
+    var s=Math.sin(v*12.9898)*43758.5453;
+    return s-Math.floor(s);
+  }
+  function blobPath(x,y,r,seed){
+    var n=10;
+    var pts=[];
+    for(var i=0;i<n;i++){
+      var a=(i/n)*Math.PI*2;
+      var rr=r*(0.84+0.2*pseudo(seed+i*7.3));
+      pts.push({x:x+Math.cos(a)*rr,y:y+Math.sin(a)*rr});
+    }
+    ctx.beginPath();
+    ctx.moveTo((pts[0].x+pts[n-1].x)/2,(pts[0].y+pts[n-1].y)/2);
+    for(var k=0;k<n;k++){
+      var cur=pts[k];
+      var nx=pts[(k+1)%n];
+      ctx.quadraticCurveTo(cur.x,cur.y,(cur.x+nx.x)/2,(cur.y+nx.y)/2);
+    }
+    ctx.closePath();
+  }
+  function initNoise(){
+    var nc=document.createElement('canvas');
+    nc.width=160;nc.height=160;
+    var g=nc.getContext('2d');
+    for(var i=0;i<1800;i++){
+      g.fillStyle='rgba(255,254,245,'+(Math.random()*0.05).toFixed(3)+')';
+      var s=Math.random()*1.4+0.2;
+      g.fillRect(Math.random()*160,Math.random()*160,s,s);
+    }
+    noisePattern=ctx.createPattern(nc,'repeat');
+  }
+  function sizeSky(){
+    var top=document.querySelector('.top');
+    var topH=top?top.getBoundingClientRect().height:120;
+    var h=Math.max(360,Math.round(window.innerHeight-topH-40));
+    skyView.style.height=h+'px';
+    var rect=canvas.getBoundingClientRect();
+    var w=Math.max(280,Math.round(rect.width));
+    var hh=Math.max(240,Math.round(rect.height));
+    var dpr=Math.min(2,window.devicePixelRatio||1);
+    canvas.width=Math.round(w*dpr);
+    canvas.height=Math.round(hh*dpr);
+    canvas.style.width=w+'px';
+    canvas.style.height=hh+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    worldW=w;worldH=hh;
+  }
+  function buildParticles(){
+    if(!worldW||!worldH)return;
+    var old={};
+    particles.forEach(function(p){old[p.id]=p;});
+    var next=[];
+    state.cards.forEach(function(c){
+      var p=old[c.id];
+      if(p){p.seq=c.seq;next.push(p);return;}
+      var r=Math.min(26+(c.seq%3)*4,Math.max(14,Math.min(worldW,worldH)/2-8));
+      next.push({
+        id:c.id,
+        seq:c.seq,
+        x:r+Math.random()*(worldW-2*r),
+        y:r+Math.random()*(worldH-2*r),
+        vx:(Math.random()-.5)*.5,
+        vy:(Math.random()-.5)*.5,
+        r:r,
+        seed:Math.random()*1000,
+        phase:Math.random()*Math.PI*2,
+        color:COLORS[c.seq%COLORS.length]
+      });
+    });
+    particles=next;
+  }
+  function clampParticles(){
+    particles.forEach(function(p){
+      p.r=Math.min(p.r,Math.max(14,Math.min(worldW,worldH)/2-8));
+      p.x=Math.max(p.r,Math.min(worldW-p.r,p.x));
+      p.y=Math.max(p.r,Math.min(worldH-p.r,p.y));
+    });
+  }
+  function stepParticles(){
+    var n=particles.length;
+    var i,j;
+    for(i=0;i<n;i++){
+      var p=particles[i];
+      p.vx+=(Math.random()-.5)*0.035;
+      p.vy+=(Math.random()-.5)*0.035;
+    }
+    for(i=0;i<n;i++){
+      for(j=i+1;j<n;j++){
+        var a=particles[i],b=particles[j];
+        var dx=b.x-a.x,dy=b.y-a.y;
+        var d2=dx*dx+dy*dy;
+        var min=a.r+b.r+10;
+        if(d2<min*min&&d2>0.01){
+          var d=Math.sqrt(d2);
+          var f=(min-d)/min*0.12;
+          var ux=dx/d,uy=dy/d;
+          a.vx-=ux*f;a.vy-=uy*f;
+          b.vx+=ux*f;b.vy+=uy*f;
+        }
+      }
+    }
+    for(i=0;i<n;i++){
+      var q=particles[i];
+      q.vx*=0.988;q.vy*=0.988;
+      var sp=Math.sqrt(q.vx*q.vx+q.vy*q.vy);
+      var maxSp=0.6;
+      if(sp>maxSp){q.vx=q.vx/sp*maxSp;q.vy=q.vy/sp*maxSp;sp=maxSp;}
+      if(sp<0.12){
+        var ang=Math.random()*Math.PI*2;
+        q.vx+=Math.cos(ang)*0.05;
+        q.vy+=Math.sin(ang)*0.05;
+      }
+      q.x+=q.vx;q.y+=q.vy;
+      if(q.x<q.r){q.x=q.r;q.vx=Math.abs(q.vx);}
+      if(q.x>worldW-q.r){q.x=worldW-q.r;q.vx=-Math.abs(q.vx);}
+      if(q.y<q.r){q.y=q.r;q.vy=Math.abs(q.vy);}
+      if(q.y>worldH-q.r){q.y=worldH-q.r;q.vy=-Math.abs(q.vy);}
+    }
+  }
+  function drawParticle(p,t){
+    var pulse=0.72+0.28*Math.sin(t*0.0016+p.phase);
+    ctx.save();
+    ctx.shadowBlur=18*pulse;
+    ctx.shadowColor=p.color;
+    ctx.lineWidth=2;
+    ctx.strokeStyle=p.color;
+    ctx.fillStyle='rgba(26,28,44,.55)';
+    blobPath(p.x,p.y,p.r,p.seed);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.font='700 11.5px "Comic Sans MS","Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(255,254,245,.92)';
+    ctx.fillText('#'+pad3(p.seq),p.x,p.y+0.5);
+    ctx.restore();
+  }
+  function drawSky(){
+    if(!worldW||!worldH)return;
+    var t=performance.now();
+    ctx.clearRect(0,0,worldW,worldH);
+    ctx.fillStyle='#1a1c2c';
+    ctx.fillRect(0,0,worldW,worldH);
+    if(noisePattern){
+      ctx.fillStyle=noisePattern;
+      ctx.fillRect(0,0,worldW,worldH);
+    }
+    for(var i=0;i<particles.length;i++)drawParticle(particles[i],t);
+  }
+  function loop(){
+    if(view!=='sky')return;
+    stepParticles();
+    drawSky();
+    animId=requestAnimationFrame(loop);
+  }
+  function startLoop(){
+    stopLoop();
+    if(reduceMotion){drawSky();return;}
+    animId=requestAnimationFrame(loop);
+  }
+  function stopLoop(){
+    if(animId){cancelAnimationFrame(animId);animId=null;}
+  }
+  function updateViewSwitch(){
+    var btns=viewSwitch.querySelectorAll('[data-view]');
+    for(var i=0;i<btns.length;i++){
+      btns[i].classList.toggle('active',btns[i].dataset.view===view);
+    }
+  }
+  function setView(next){
+    if(next===view)return;
+    view=next;
+    if(view==='sky'){
+      listView.hidden=true;
+      document.body.classList.add('sky-mode');
+      skyView.hidden=false;
+      sizeSky();
+      buildParticles();
+      startLoop();
+    }else{
+      stopLoop();
+      skyView.hidden=true;
+      document.body.classList.remove('sky-mode');
+      listView.hidden=false;
+    }
+    updateViewSwitch();
+  }
+  viewSwitch.addEventListener('click',function(e){
+    var b=e.target.closest('[data-view]');
+    if(!b)return;
+    setView(b.dataset.view);
+  });
+  window.addEventListener('resize',function(){
+    if(view!=='sky')return;
+    sizeSky();
+    clampParticles();
+    if(reduceMotion)drawSky();
+  });
+  document.addEventListener('visibilitychange',function(){
+    if(view!=='sky')return;
+    if(document.hidden){stopLoop();}
+    else{startLoop();}
+  });
 
   /* ---------- 卡片渲染 ---------- */
   function cardHTML(c){
@@ -1321,6 +1625,7 @@ input[type=text].sending::placeholder{color:transparent}
     });
   },30000);
 
+  initNoise();
   load();
   render();
 })();
