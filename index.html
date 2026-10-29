@@ -129,6 +129,10 @@ input[type=text].sending::placeholder{color:transparent}
 .btn.danger:hover{box-shadow:4px 4px 0 var(--marker-red);background:rgba(255,107,107,.14)}
 .btn.danger:active{box-shadow:none}
 
+/* 灵感碰撞按钮 */
+.btn.link{background:rgba(78,205,196,.32);box-shadow:2px 2px 0 var(--marker-teal)}
+.btn.link:hover{box-shadow:4px 4px 0 var(--marker-red)}
+
 /* 设置面板 */
 .settings{
   margin:0 0 18px;padding:16px 16px 14px;position:relative;
@@ -196,7 +200,7 @@ input[type=text].sending::placeholder{color:transparent}
 .card{
   --tilt:0deg;
   position:relative;
-  background:var(--paper);
+  background-color:var(--paper);
   border:var(--border-w) dashed var(--ink);
   border-radius:var(--radius-sm);
   box-shadow:4px 4px 0 var(--marker-teal);
@@ -212,7 +216,13 @@ input[type=text].sending::placeholder{color:transparent}
   border-left:1px dashed rgba(44,44,44,.3);border-right:1px dashed rgba(44,44,44,.3)}
 .card.leaving{opacity:0;transform:rotate(var(--tilt)) translateY(-6px) scale(.985)}
 .card.digesting{opacity:0;transform:rotate(var(--tilt)) scale(.94);pointer-events:none}
+.card.flash{animation:flashCard 1.1s ease}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes flashCard{
+  0%{background-color:rgba(255,217,61,.9)}
+  70%{background-color:rgba(255,217,61,.45)}
+  100%{background-color:var(--paper)}
+}
 
 .card-head{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .seq{font-weight:700;letter-spacing:.6px;color:var(--ink)}
@@ -231,6 +241,17 @@ input[type=text].sending::placeholder{color:transparent}
   transition:color .18s ease}
 .card-title a:hover{color:var(--marker-red)}
 .card-title a::after{content:"↗";font-size:11px;color:var(--muted);margin-left:4px;vertical-align:super;text-decoration:none}
+
+/* 手账贴纸标签 */
+.card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag-chip{
+  font-size:11px;font-weight:700;padding:2px 8px;white-space:nowrap;
+  border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
+  transform:rotate(-1deg);
+}
+.card-tags .tag-chip:nth-child(3n+1){background:rgba(255,217,61,.62)}
+.card-tags .tag-chip:nth-child(3n+2){background:rgba(78,205,196,.5)}
+.card-tags .tag-chip:nth-child(3n){background:rgba(255,107,107,.42)}
 
 .ai-summary{
   margin-top:10px;padding:10px 12px;
@@ -276,6 +297,22 @@ input[type=text].sending::placeholder{color:transparent}
 .card-actions .btn{font-size:13px;padding:6px 12px}
 .btn.ai{background:rgba(255,217,61,.5);box-shadow:2px 2px 0 var(--marker-yellow)}
 .btn.ai:hover{box-shadow:4px 4px 0 var(--marker-red)}
+
+/* 关联灵感展示 */
+.card-links{
+  margin-top:12px;padding-top:10px;
+  border-top:1.5px dashed var(--muted);
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+  font-size:12px;color:var(--muted);
+}
+.card-links__label{font-weight:700}
+.link-chip{
+  font-size:12px;font-weight:700;color:var(--ink);text-decoration:none;
+  padding:1px 7px;border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
+  background:rgba(78,205,196,.35);transform:rotate(1deg);
+  transition:box-shadow .18s ease,transform .18s ease,background .18s ease;
+}
+.link-chip:hover{box-shadow:2px 2px 0 var(--marker-teal);transform:rotate(1deg) translate(1px,1px)}
 
 .empty{
   padding:54px 20px;text-align:center;
@@ -365,7 +402,7 @@ input[type=text].sending::placeholder{color:transparent}
 }
 .monster-status.show{opacity:1;transform:translateY(0) rotate(-4deg)}
 
-/* 自定义确认弹窗（便签纸） */
+/* 自定义弹窗（便签纸） */
 .modal-mask{
   position:fixed;inset:0;z-index:100;
   display:flex;align-items:center;justify-content:center;
@@ -389,14 +426,42 @@ input[type=text].sending::placeholder{color:transparent}
   opacity:0;
   transition:transform .22s ease,opacity .22s ease;
 }
+.modal-card--wide{max-width:440px}
 .modal-mask.show .modal-card{transform:rotate(-1deg) scale(1);opacity:1}
 .modal-card::after{content:"";position:absolute;top:-9px;left:50%;width:66px;height:17px;
   transform:translateX(-50%) rotate(-3deg);background:rgba(255,217,61,.72);
   border-left:1px dashed rgba(44,44,44,.3);border-right:1px dashed rgba(44,44,44,.3)}
 .modal-title{margin:0 0 10px;font-size:17px;font-weight:700;font-style:italic;transform:rotate(-.4deg)}
-.modal-text{margin:0 0 18px;font-size:13px;color:var(--muted);line-height:1.6}
+.modal-text{margin:0 0 16px;font-size:13px;color:var(--muted);line-height:1.6}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .modal-confirm{font-weight:700}
+
+/* 关联选择列表 */
+.link-list{
+  max-height:46vh;overflow-y:auto;
+  margin:0 0 16px;padding-right:2px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.link-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;
+  border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
+  background:var(--paper-2);
+  cursor:pointer;
+  transition:box-shadow .18s ease,transform .18s ease,background .18s ease;
+}
+.link-item:hover{box-shadow:2px 2px 0 var(--marker-teal);transform:translate(1px,1px)}
+.link-item input[type=checkbox]{
+  width:16px;height:16px;flex:none;
+  accent-color:var(--marker-red);cursor:pointer;
+}
+.link-item__id{font-weight:700;font-size:12.5px;flex:none}
+.link-item__title{flex:1;min-width:0;font-size:12.5px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-empty{
+  padding:20px 10px;text-align:center;font-size:12.5px;color:var(--muted);
+  border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
+}
 
 @keyframes breathe{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(.8deg)}}
 @keyframes chew{
@@ -514,6 +579,18 @@ input[type=text].sending::placeholder{color:transparent}
   </div>
 </div>
 
+<div class="modal-mask" id="linkMask" hidden>
+  <div class="modal-card modal-card--wide" role="dialog" aria-modal="true" aria-labelledby="linkTitle">
+    <h3 class="modal-title" id="linkTitle">把这缕灵感连接到...</h3>
+    <p class="modal-text" id="linkSubtitle"></p>
+    <div class="link-list" id="linkList"></div>
+    <div class="modal-actions">
+      <button class="btn" id="linkCancel">取消</button>
+      <button class="btn primary" id="linkSave">🔗 保存关联</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var KEY_CARDS='favorite_digester_cards';
@@ -556,8 +633,15 @@ input[type=text].sending::placeholder{color:transparent}
   var modalMask=document.getElementById('modalMask');
   var modalCancel=document.getElementById('modalCancel');
   var modalConfirm=document.getElementById('modalConfirm');
+  var linkMask=document.getElementById('linkMask');
+  var linkList=document.getElementById('linkList');
+  var linkSubtitle=document.getElementById('linkSubtitle');
+  var linkCancel=document.getElementById('linkCancel');
+  var linkSave=document.getElementById('linkSave');
   var pendingDeleteId=null;
+  var pendingLinkId=null;
   var modalHideTimer=null;
+  var linkHideTimer=null;
   var popTimer=null;
   var delivering=false;
   var reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -768,7 +852,7 @@ input[type=text].sending::placeholder{color:transparent}
     }
   }
 
-  /* ---------- 自定义确认弹窗 ---------- */
+  /* ---------- 删除确认弹窗 ---------- */
   function openDeleteModal(id){
     pendingDeleteId=id;
     clearTimeout(modalHideTimer);
@@ -796,9 +880,103 @@ input[type=text].sending::placeholder{color:transparent}
     closeDeleteModal();
     if(id)deleteCard(id,cardEl);
   });
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape')closeDeleteModal();
+
+  /* ---------- 灵感碰撞：双向绑定核心 ---------- */
+  function applyBidirectionalLinks(cards,currentId,selectedIds){
+    var selectedSet={};
+    selectedIds.forEach(function(id){selectedSet[id]=true;});
+    cards.forEach(function(c){
+      if(c.id===currentId){
+        c.linkedIds=selectedIds.filter(function(id){return id!==currentId;});
+      }else{
+        var has=c.linkedIds.indexOf(currentId)>=0;
+        var should=!!selectedSet[c.id];
+        if(should&&!has){c.linkedIds.push(currentId);}
+        else if(!should&&has){c.linkedIds=c.linkedIds.filter(function(x){return x!==currentId;});}
+      }
+      c.linkedIds=c.linkedIds.filter(function(x,i,arr){
+        return x!==c.id&&arr.indexOf(x)===i;
+      });
+    });
+    return cards;
+  }
+
+  function openLinkModal(id){
+    pendingLinkId=id;
+    var current=state.cards.find(function(c){return c.id===id;});
+    if(!current)return;
+    var others=state.cards.filter(function(c){return c.id!==id;})
+      .sort(function(a,b){return a.seq-b.seq;});
+    linkSubtitle.textContent='当前卡片 #'+pad3(current.seq)+'，勾选要连接的灵感（双向生效）。';
+    if(!others.length){
+      linkList.innerHTML='<div class="link-empty">还没有其他卡片可以连接，先投递几条吧。</div>';
+    }else{
+      linkList.innerHTML=others.map(function(c){
+        var checked=current.linkedIds.indexOf(c.id)>=0?' checked':'';
+        return '<label class="link-item">'
+          +'<input type="checkbox" value="'+esc(c.id)+'"'+checked+'>'
+          +'<span class="link-item__id">#'+pad3(c.seq)+'</span>'
+          +'<span class="link-item__title">'+esc(shorten(c.title||c.content,30))+'</span>'
+          +'</label>';
+      }).join('');
+    }
+    clearTimeout(linkHideTimer);
+    linkMask.hidden=false;
+    void linkMask.offsetWidth;
+    linkMask.classList.add('show');
+    linkCancel.focus();
+  }
+  function closeLinkModal(){
+    if(linkMask.hidden)return;
+    pendingLinkId=null;
+    linkMask.classList.remove('show');
+    clearTimeout(linkHideTimer);
+    linkHideTimer=setTimeout(function(){
+      linkMask.hidden=true;
+    },260);
+  }
+  function saveLinks(){
+    var currentId=pendingLinkId;
+    var current=state.cards.find(function(c){return c.id===currentId;});
+    if(!current){closeLinkModal();return;}
+    var selected=[];
+    linkList.querySelectorAll('input[type=checkbox]:checked').forEach(function(cb){
+      selected.push(cb.value);
+    });
+    applyBidirectionalLinks(state.cards,currentId,selected);
+    current.updatedAt=Date.now();
+    save();
+    closeLinkModal();
+    render();
+  }
+  linkCancel.addEventListener('click',closeLinkModal);
+  linkMask.addEventListener('click',function(e){
+    if(e.target===linkMask)closeLinkModal();
   });
+  linkSave.addEventListener('click',saveLinks);
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){closeDeleteModal();closeLinkModal();}
+  });
+
+  /* ---------- 跳转并高亮关联卡片 ---------- */
+  function goToCard(id){
+    var rec=state.cards.find(function(c){return c.id===id;});
+    if(!rec)return;
+    if(rec.status!==tab){
+      tab=rec.status;
+      render();
+    }
+    requestAnimationFrame(function(){
+      var el=list.querySelector('.card[data-id="'+id+'"]');
+      if(!el)return;
+      el.scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'center'});
+      el.classList.remove('flash');
+      void el.offsetWidth;
+      el.classList.add('flash');
+      setTimeout(function(){el.classList.remove('flash');},1200);
+    });
+  }
 
   /* ---------- 卡片渲染 ---------- */
   function cardHTML(c){
@@ -811,6 +989,7 @@ input[type=text].sending::placeholder{color:transparent}
     }
     actions.push('<button class="btn" data-act="note">📝 '+(c.userNote?'编辑笔记':'写笔记')+'</button>');
     actions.push('<button class="btn ai" data-act="ai">✨ '+(c.aiSummary?'重新提炼':'AI 提炼')+'</button>');
+    actions.push('<button class="btn link" data-act="link">🔗 灵感碰撞</button>');
     actions.push('<button class="btn danger" data-act="delete">🗑️ 删除</button>');
 
     var titleHTML;
@@ -820,12 +999,33 @@ input[type=text].sending::placeholder{color:transparent}
       titleHTML=esc(c.title);
     }
 
+    var tagsHTML='';
+    if(Array.isArray(c.tags)&&c.tags.length){
+      tagsHTML='<div class="card-tags">'+c.tags.map(function(t){
+        return '<span class="tag-chip">#'+esc(t)+'</span>';
+      }).join('')+'</div>';
+    }
+
     var aiHTML=c.aiSummary
       ?'<div class="ai-summary">'+esc(c.aiSummary)+'</div>'
       :'<div class="ai-summary" hidden></div>';
     var noteHTML=c.userNote
       ?'<div class="user-note">'+esc(c.userNote)+'</div>'
       :'';
+
+    var linkedCards=(c.linkedIds||[]).map(function(id){
+      return state.cards.find(function(x){return x.id===id;});
+    }).filter(Boolean).sort(function(a,b){return a.seq-b.seq;});
+
+    var linksHTML='';
+    if(linkedCards.length){
+      linksHTML='<div class="card-links">'
+        +'<span class="card-links__label">🔗 关联灵感：</span>'
+        +linkedCards.map(function(t){
+          return '<a href="#" class="link-chip" data-goto="'+esc(t.id)+'">#'+pad3(t.seq)+'</a>';
+        }).join('')
+        +'</div>';
+    }
 
     var showContent=!(c.type==='text'&&c.content.length<=40);
 
@@ -836,9 +1036,11 @@ input[type=text].sending::placeholder{color:transparent}
         +'<span class="time" data-ts="'+c.createdAt+'">'+relTime(c.createdAt)+'</span>'
       +'</div>'
       +'<h3 class="card-title" title="'+esc(c.title)+'">'+titleHTML+'</h3>'
+      +tagsHTML
       +aiHTML
       +noteHTML
       +(showContent?'<p class="card-content">'+esc(c.content)+'</p>':'')
+      +linksHTML
       +'<div class="card-actions">'+actions.join('')+'</div>'
       +'</article>';
   }
@@ -1026,6 +1228,12 @@ input[type=text].sending::placeholder{color:transparent}
   }
 
   list.addEventListener('click',function(e){
+    var goto=e.target.closest('[data-goto]');
+    if(goto){
+      e.preventDefault();
+      goToCard(goto.dataset.goto);
+      return;
+    }
     var btn=e.target.closest('[data-act]');
     if(!btn)return;
     var cardEl=e.target.closest('.card');
@@ -1042,6 +1250,10 @@ input[type=text].sending::placeholder{color:transparent}
     }
     if(act==='note'){
       openNoteEditor(cardEl,rec);
+      return;
+    }
+    if(act==='link'){
+      openLinkModal(id);
       return;
     }
     if(act==='delete'){
