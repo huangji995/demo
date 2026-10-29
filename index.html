@@ -487,51 +487,85 @@ input[type=text].sending::placeholder{color:transparent}
   border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
 }
 
-/* 灵感星空（夜间手账） */
-.sky-view{
-  position:relative;
-  max-width:1000px;margin:0 auto;
-  padding:8px 20px 24px;
-  height:520px;
+/* 灵感星空：全屏夜空层 */
+.sky-layer{
+  position:fixed;inset:0;z-index:10;
+  overflow:hidden;
+  background:#0f1019;
 }
 .sky-canvas{
+  position:absolute;inset:0;
   display:block;width:100%;height:100%;
-  background:#1a1c2c;
-  border:var(--border-w) dashed rgba(255,254,245,.4);
-  border-radius:var(--radius-sm);
-  box-shadow:6px 6px 0 rgba(78,205,196,.35);
+  touch-action:none;
+  cursor:grab;
 }
-.sky-hint{
-  position:absolute;left:34px;top:18px;
-  font-size:12px;font-style:italic;letter-spacing:.5px;
-  color:rgba(255,254,245,.55);
+.sky-top{
+  position:absolute;top:16px;left:16px;z-index:20;
+  display:flex;gap:10px;flex-wrap:wrap;
   pointer-events:none;
-  text-shadow:0 1px 0 rgba(0,0,0,.45);
 }
+.sky-btn{
+  pointer-events:auto;
+  font:inherit;font-size:13px;font-weight:700;
+  padding:7px 14px;
+  border:var(--border-w) dashed rgba(255,254,245,.55);
+  border-radius:var(--radius-sm);
+  background:rgba(26,28,44,.72);
+  color:#f2ead6;
+  cursor:pointer;
+  box-shadow:2px 2px 0 rgba(78,205,196,.5);
+  transform:rotate(-1deg);
+  transition:background .2s ease,box-shadow .2s ease,transform .2s ease,color .2s ease;
+}
+.sky-btn:nth-child(even){transform:rotate(1deg)}
+.sky-btn:hover{
+  background:rgba(255,255,255,.12);
+  box-shadow:3px 3px 0 rgba(255,107,107,.75);
+  transform:translate(1px,1px) rotate(-1deg);
+}
+.sky-btn:active{box-shadow:none;transform:translate(2px,2px) rotate(-1deg)}
+.sky-btn:focus-visible{outline:none;box-shadow:2px 2px 0 var(--marker-yellow)}
+.sky-help{
+  position:absolute;right:18px;bottom:14px;z-index:15;
+  font-size:11.5px;font-style:italic;letter-spacing:.4px;
+  color:rgba(255,254,245,.42);
+  pointer-events:none;
+  text-shadow:0 1px 0 rgba(0,0,0,.5);
+}
+.sky-tip{
+  position:fixed;z-index:25;
+  max-width:240px;
+  padding:8px 11px;
+  background:rgba(255,254,245,.97);
+  color:#2c2c2c;
+  border:var(--border-w) dashed #2c2c2c;
+  border-radius:var(--radius-sm);
+  box-shadow:3px 3px 0 rgba(78,205,196,.9);
+  font-size:12.5px;line-height:1.5;
+  pointer-events:none;
+  transform:rotate(-1deg);
+}
+.sky-tip strong{display:block;font-weight:700;word-break:break-word}
+.sky-tip span{display:block;margin-top:3px;font-size:11.5px;color:rgba(44,44,44,.6)}
+.sky-toast{
+  position:fixed;left:50%;bottom:42px;z-index:30;
+  padding:9px 16px;
+  background:rgba(255,254,245,.97);
+  color:#2c2c2c;
+  border:var(--border-w) dashed #2c2c2c;
+  border-radius:var(--radius-sm);
+  box-shadow:3px 3px 0 #ffd93d;
+  font-size:13px;font-weight:600;
+  pointer-events:none;
+  opacity:0;
+  transform:translateX(-50%) translateY(10px) rotate(-1deg);
+  transition:opacity .22s ease,transform .22s ease;
+}
+.sky-toast.show{opacity:1;transform:translateX(-50%) translateY(0) rotate(-1deg)}
 
-/* 星空模式下的纸张/顶部变体 */
-body.sky-mode{background-color:#1a1c2c;background-image:none}
-body.sky-mode .top{background:#1a1c2c;border-bottom-color:rgba(255,254,245,.22)}
-body.sky-mode h1,body.sky-mode .sub{color:#f2ead6}
-body.sky-mode h1::after{background:var(--marker-teal)}
-body.sky-mode .gear{
-  color:#f2ead6;border-color:rgba(255,254,245,.45);
-  background:rgba(255,255,255,.06);
-  box-shadow:2px 2px 0 rgba(78,205,196,.6);
-}
-body.sky-mode .gear:hover{box-shadow:4px 4px 0 rgba(255,107,107,.7)}
-body.sky-mode .view-tab{
-  color:rgba(242,234,214,.62);
-  border-color:rgba(255,254,245,.32);
-  background:rgba(255,255,255,.05);
-  box-shadow:none;
-}
-body.sky-mode .view-tab:hover{color:#f2ead6;background:rgba(255,255,255,.1)}
-body.sky-mode .view-tab.active{
-  color:#1a1c2c;background:var(--marker-yellow);
-  border-color:var(--marker-yellow);
-  box-shadow:2px 2px 0 var(--marker-teal);
-}
+/* 星空模式下的全局变体 */
+body.sky-mode{overflow:hidden;background-color:#0f1019;background-image:none}
+body.sky-mode .top{display:none}
 body.sky-mode .monster{display:none}
 
 @keyframes breathe{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(.8deg)}}
@@ -552,8 +586,9 @@ body.sky-mode .monster{display:none}
 @media (max-width:520px){
   .monster{width:92px;right:10px;bottom:10px}
   main{padding-bottom:120px}
-  .sky-view{padding:6px 12px 18px}
-  .sky-hint{left:22px;top:14px}
+  .sky-top{top:12px;left:12px;gap:8px}
+  .sky-btn{font-size:12px;padding:6px 12px}
+  .sky-help{right:12px;bottom:10px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
@@ -620,10 +655,16 @@ body.sky-mode .monster{display:none}
   <p class="foot">数据保存在本机 localStorage，清除浏览器数据会一并清除。</p>
 </main>
 
-<section class="sky-view" id="skyView" hidden>
+<div class="sky-layer" id="skyView" hidden>
   <canvas class="sky-canvas" id="skyCanvas"></canvas>
-  <div class="sky-hint">✨ 光点会自己慢慢游荡</div>
-</section>
+  <div class="sky-top">
+    <button class="sky-btn" id="skyBack">← 返回列表</button>
+    <button class="sky-btn" id="skyWeave">✨ AI 编织</button>
+  </div>
+  <div class="sky-tip" id="skyTip" hidden></div>
+  <div class="sky-toast" id="skyToast"></div>
+  <div class="sky-help">滚轮缩放 · 拖动空白平移 · 拖动光点移动</div>
+</div>
 
 <div class="monster" id="monster" aria-hidden="true">
   <div class="monster-thought" id="monsterThought">💡</div>
@@ -733,13 +774,36 @@ body.sky-mode .monster{display:none}
   var skyView=document.getElementById('skyView');
   var canvas=document.getElementById('skyCanvas');
   var ctx=canvas.getContext('2d');
+  var skyBack=document.getElementById('skyBack');
+  var skyWeave=document.getElementById('skyWeave');
+  var skyTip=document.getElementById('skyTip');
+  var skyToast=document.getElementById('skyToast');
   var view='list';
   var particles=[];
   var noisePattern=null;
   var animId=null;
   var worldW=0;
   var worldH=0;
+  var dpr=1;
+  var panX=0;
+  var panY=0;
+  var zoom=1;
+  var bgGrad=null;
+  var stars=[];
+  var hoveredId=null;
+  var draggingId=null;
+  var isPanning=false;
+  var panStartX=0;
+  var panStartY=0;
+  var panStartPanX=0;
+  var panStartPanY=0;
+  var dragOffX=0;
+  var dragOffY=0;
+  var toastTimer=null;
   var COLORS=['#4ecdc4','#ff6b6b','#ffd93d'];
+  var MAX_LABEL=6;
+  var ZOOM_MIN=0.55;
+  var ZOOM_MAX=2.6;
 
   function esc(s){
     return String(s).replace(/[&<>"']/g,function(m){
@@ -1073,7 +1137,7 @@ body.sky-mode .monster{display:none}
     });
   }
 
-  /* ---------- 灵感星空：画布与光点物理 ---------- */
+  /* ---------- 灵感星空：全屏画布与相机 ---------- */
   function pseudo(v){
     var s=Math.sin(v*12.9898)*43758.5453;
     return s-Math.floor(s);
@@ -1095,6 +1159,12 @@ body.sky-mode .monster{display:none}
     }
     ctx.closePath();
   }
+  function fitText(text,maxW){
+    if(ctx.measureText(text).width<=maxW)return text;
+    var t=text;
+    while(t.length>1&&ctx.measureText(t+'…').width>maxW){t=t.slice(0,-1);}
+    return t+'…';
+  }
   function initNoise(){
     var nc=document.createElement('canvas');
     nc.width=160;nc.height=160;
@@ -1107,20 +1177,36 @@ body.sky-mode .monster{display:none}
     noisePattern=ctx.createPattern(nc,'repeat');
   }
   function sizeSky(){
-    var top=document.querySelector('.top');
-    var topH=top?top.getBoundingClientRect().height:120;
-    var h=Math.max(360,Math.round(window.innerHeight-topH-40));
-    skyView.style.height=h+'px';
-    var rect=canvas.getBoundingClientRect();
-    var w=Math.max(280,Math.round(rect.width));
-    var hh=Math.max(240,Math.round(rect.height));
-    var dpr=Math.min(2,window.devicePixelRatio||1);
-    canvas.width=Math.round(w*dpr);
-    canvas.height=Math.round(hh*dpr);
-    canvas.style.width=w+'px';
-    canvas.style.height=hh+'px';
+    worldW=Math.max(320,window.innerWidth);
+    worldH=Math.max(320,window.innerHeight);
+    dpr=Math.min(2,window.devicePixelRatio||1);
+    canvas.width=Math.round(worldW*dpr);
+    canvas.height=Math.round(worldH*dpr);
+    canvas.style.width=worldW+'px';
+    canvas.style.height=worldH+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    worldW=w;worldH=hh;
+    bgGrad=ctx.createRadialGradient(worldW*0.5,worldH*0.42,0,worldW*0.5,worldH*0.42,Math.max(worldW,worldH)*0.78);
+    bgGrad.addColorStop(0,'#272b4c');
+    bgGrad.addColorStop(0.55,'#1a1c2c');
+    bgGrad.addColorStop(1,'#0f1019');
+    stars=[];
+    var count=Math.max(40,Math.min(130,Math.round(worldW*worldH/11000)));
+    for(var i=0;i<count;i++){
+      stars.push({
+        x:Math.random()*worldW,
+        y:Math.random()*worldH,
+        r:Math.random()*1.3+0.4,
+        phase:Math.random()*Math.PI*2
+      });
+    }
+  }
+  function hydrateParticle(p,c){
+    p.seq=c.seq;
+    p.label=shorten(c.title||c.content,MAX_LABEL);
+    p.fullTitle=c.title||c.content;
+    p.domain=c.type==='link'?hostOf(c.content):'';
+    p.linked=Array.isArray(c.linkedIds)&&c.linkedIds.length>0;
+    p.r=(p.linked?30:23)+(c.seq%3)*2;
   }
   function buildParticles(){
     if(!worldW||!worldH)return;
@@ -1129,20 +1215,22 @@ body.sky-mode .monster{display:none}
     var next=[];
     state.cards.forEach(function(c){
       var p=old[c.id];
-      if(p){p.seq=c.seq;next.push(p);return;}
-      var r=Math.min(26+(c.seq%3)*4,Math.max(14,Math.min(worldW,worldH)/2-8));
-      next.push({
+      if(p){hydrateParticle(p,c);next.push(p);return;}
+      var np={
         id:c.id,
-        seq:c.seq,
-        x:r+Math.random()*(worldW-2*r),
-        y:r+Math.random()*(worldH-2*r),
+        x:0,y:0,
         vx:(Math.random()-.5)*.5,
         vy:(Math.random()-.5)*.5,
-        r:r,
         seed:Math.random()*1000,
         phase:Math.random()*Math.PI*2,
-        color:COLORS[c.seq%COLORS.length]
-      });
+        color:COLORS[c.seq%COLORS.length],
+        dragging:false
+      };
+      hydrateParticle(np,c);
+      np.r=Math.min(np.r,Math.max(14,Math.min(worldW,worldH)/2-8));
+      np.x=np.r+Math.random()*(worldW-2*np.r);
+      np.y=np.r+Math.random()*(worldH-2*np.r);
+      next.push(np);
     });
     particles=next;
   }
@@ -1158,6 +1246,7 @@ body.sky-mode .monster{display:none}
     var i,j;
     for(i=0;i<n;i++){
       var p=particles[i];
+      if(p.dragging)continue;
       p.vx+=(Math.random()-.5)*0.035;
       p.vy+=(Math.random()-.5)*0.035;
     }
@@ -1166,21 +1255,22 @@ body.sky-mode .monster{display:none}
         var a=particles[i],b=particles[j];
         var dx=b.x-a.x,dy=b.y-a.y;
         var d2=dx*dx+dy*dy;
-        var min=a.r+b.r+10;
+        var min=a.r+b.r+16;
         if(d2<min*min&&d2>0.01){
           var d=Math.sqrt(d2);
-          var f=(min-d)/min*0.12;
+          var f=(min-d)/min*0.28;
           var ux=dx/d,uy=dy/d;
-          a.vx-=ux*f;a.vy-=uy*f;
-          b.vx+=ux*f;b.vy+=uy*f;
+          if(!a.dragging){a.vx-=ux*f;a.vy-=uy*f;}
+          if(!b.dragging){b.vx+=ux*f;b.vy+=uy*f;}
         }
       }
     }
     for(i=0;i<n;i++){
       var q=particles[i];
+      if(q.dragging)continue;
       q.vx*=0.988;q.vy*=0.988;
       var sp=Math.sqrt(q.vx*q.vx+q.vy*q.vy);
-      var maxSp=0.6;
+      var maxSp=0.65;
       if(sp>maxSp){q.vx=q.vx/sp*maxSp;q.vy=q.vy/sp*maxSp;sp=maxSp;}
       if(sp<0.12){
         var ang=Math.random()*Math.PI*2;
@@ -1194,38 +1284,69 @@ body.sky-mode .monster{display:none}
       if(q.y>worldH-q.r){q.y=worldH-q.r;q.vy=-Math.abs(q.vy);}
     }
   }
-  function drawParticle(p,t){
+  function drawParticle(p,t,isHover){
     var pulse=0.72+0.28*Math.sin(t*0.0016+p.phase);
+    var r=p.r*(isHover?1.18:1);
+    if(isHover){
+      ctx.save();
+      ctx.strokeStyle='rgba(255,254,245,.65)';
+      ctx.lineWidth=1.4;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,r+7,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.save();
-    ctx.shadowBlur=18*pulse;
+    ctx.shadowBlur=(isHover?26:18)*pulse;
     ctx.shadowColor=p.color;
     ctx.lineWidth=2;
     ctx.strokeStyle=p.color;
-    ctx.fillStyle='rgba(26,28,44,.55)';
-    blobPath(p.x,p.y,p.r,p.seed);
+    ctx.fillStyle=isHover?'rgba(40,44,70,.78)':'rgba(26,28,44,.55)';
+    blobPath(p.x,p.y,r,p.seed);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
 
     ctx.save();
-    ctx.font='700 11.5px "Comic Sans MS","Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.font='700 10.5px "Comic Sans MS","Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif';
     ctx.textAlign='center';
     ctx.textBaseline='middle';
     ctx.fillStyle='rgba(255,254,245,.92)';
-    ctx.fillText('#'+pad3(p.seq),p.x,p.y+0.5);
+    ctx.fillText(fitText(p.label,r*1.5),p.x,p.y+0.5);
     ctx.restore();
   }
   function drawSky(){
     if(!worldW||!worldH)return;
     var t=performance.now();
+    ctx.setTransform(dpr,0,0,dpr,0,0);
     ctx.clearRect(0,0,worldW,worldH);
-    ctx.fillStyle='#1a1c2c';
+    ctx.fillStyle=bgGrad||'#1a1c2c';
     ctx.fillRect(0,0,worldW,worldH);
+    for(var i=0;i<stars.length;i++){
+      var s=stars[i];
+      ctx.globalAlpha=0.22+0.34*(0.5+0.5*Math.sin(t*0.0012+s.phase));
+      ctx.fillStyle='#fff8e7';
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha=1;
     if(noisePattern){
       ctx.fillStyle=noisePattern;
       ctx.fillRect(0,0,worldW,worldH);
     }
-    for(var i=0;i<particles.length;i++)drawParticle(particles[i],t);
+    ctx.save();
+    ctx.translate(panX,panY);
+    ctx.scale(zoom,zoom);
+    var hovered=null;
+    for(i=0;i<particles.length;i++){
+      var p=particles[i];
+      if(p.id===hoveredId){hovered=p;continue;}
+      drawParticle(p,t,false);
+    }
+    if(hovered)drawParticle(hovered,t,true);
+    ctx.restore();
   }
   function loop(){
     if(view!=='sky')return;
@@ -1241,11 +1362,49 @@ body.sky-mode .monster{display:none}
   function stopLoop(){
     if(animId){cancelAnimationFrame(animId);animId=null;}
   }
-  function updateViewSwitch(){
-    var btns=viewSwitch.querySelectorAll('[data-view]');
-    for(var i=0;i<btns.length;i++){
-      btns[i].classList.toggle('active',btns[i].dataset.view===view);
+  function findParticle(id){
+    for(var i=0;i<particles.length;i++){if(particles[i].id===id)return particles[i];}
+    return null;
+  }
+  function pickParticle(sx,sy){
+    var wx=(sx-panX)/zoom;
+    var wy=(sy-panY)/zoom;
+    var best=null;
+    var bestD=Infinity;
+    for(var i=0;i<particles.length;i++){
+      var p=particles[i];
+      var dx=wx-p.x,dy=wy-p.y;
+      var d=Math.sqrt(dx*dx+dy*dy);
+      if(d<=p.r*1.12&&d<bestD){best=p;bestD=d;}
     }
+    return best;
+  }
+  function updateCursor(){
+    canvas.style.cursor=draggingId?'grabbing':(isPanning?'grabbing':(hoveredId?'pointer':'grab'));
+  }
+  function updateHover(sx,sy){
+    var p=pickParticle(sx,sy);
+    hoveredId=p?p.id:null;
+    if(p){
+      skyTip.hidden=false;
+      skyTip.innerHTML='<strong>'+esc(p.fullTitle||p.label)+'</strong>'
+        +(p.domain?'<span>'+esc(p.domain)+'</span>':'');
+      var tw=skyTip.offsetWidth,th=skyTip.offsetHeight;
+      var left=sx+16,top=sy-th-12;
+      if(left+tw>window.innerWidth-12)left=sx-tw-16;
+      if(top<12)top=sy+16;
+      skyTip.style.left=Math.max(12,left)+'px';
+      skyTip.style.top=Math.max(12,top)+'px';
+    }else{
+      skyTip.hidden=true;
+    }
+    updateCursor();
+  }
+  function skyToastShow(msg){
+    skyToast.textContent=msg;
+    skyToast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){skyToast.classList.remove('show');},2000);
   }
   function setView(next){
     if(next===view)return;
@@ -1254,6 +1413,9 @@ body.sky-mode .monster{display:none}
       listView.hidden=true;
       document.body.classList.add('sky-mode');
       skyView.hidden=false;
+      panX=0;panY=0;zoom=1;
+      hoveredId=null;draggingId=null;isPanning=false;
+      skyTip.hidden=true;
       sizeSky();
       buildParticles();
       startLoop();
@@ -1262,14 +1424,106 @@ body.sky-mode .monster{display:none}
       skyView.hidden=true;
       document.body.classList.remove('sky-mode');
       listView.hidden=false;
+      hoveredId=null;draggingId=null;isPanning=false;
+      skyTip.hidden=true;
     }
     updateViewSwitch();
+  }
+  function updateViewSwitch(){
+    var btns=viewSwitch.querySelectorAll('[data-view]');
+    for(var i=0;i<btns.length;i++){
+      btns[i].classList.toggle('active',btns[i].dataset.view===view);
+    }
   }
   viewSwitch.addEventListener('click',function(e){
     var b=e.target.closest('[data-view]');
     if(!b)return;
     setView(b.dataset.view);
   });
+  skyBack.addEventListener('click',function(){setView('list');});
+  skyWeave.addEventListener('click',function(){
+    skyToastShow('✨ AI 编织正在酝酿中…');
+  });
+
+  canvas.addEventListener('pointerdown',function(e){
+    if(view!=='sky')return;
+    if(canvas.setPointerCapture){
+      try{canvas.setPointerCapture(e.pointerId);}catch(err){}
+    }
+    var p=pickParticle(e.clientX,e.clientY);
+    if(p){
+      draggingId=p.id;
+      p.dragging=true;
+      p.vx=0;p.vy=0;
+      dragOffX=(e.clientX-panX)/zoom-p.x;
+      dragOffY=(e.clientY-panY)/zoom-p.y;
+      skyTip.hidden=true;
+    }else{
+      isPanning=true;
+      panStartX=e.clientX;
+      panStartY=e.clientY;
+      panStartPanX=panX;
+      panStartPanY=panY;
+    }
+    updateCursor();
+  });
+  canvas.addEventListener('pointermove',function(e){
+    if(view!=='sky')return;
+    if(draggingId){
+      var p=findParticle(draggingId);
+      if(p){
+        p.x=(e.clientX-panX)/zoom-dragOffX;
+        p.y=(e.clientY-panY)/zoom-dragOffY;
+        p.vx=0;p.vy=0;
+      }
+      return;
+    }
+    if(isPanning){
+      panX=panStartPanX+(e.clientX-panStartX);
+      panY=panStartPanY+(e.clientY-panStartY);
+      return;
+    }
+    updateHover(e.clientX,e.clientY);
+  });
+  canvas.addEventListener('pointerup',function(e){
+    if(view!=='sky')return;
+    if(draggingId){
+      var p=findParticle(draggingId);
+      if(p)p.dragging=false;
+      draggingId=null;
+    }
+    isPanning=false;
+    updateHover(e.clientX,e.clientY);
+  });
+  canvas.addEventListener('pointercancel',function(){
+    if(draggingId){
+      var p=findParticle(draggingId);
+      if(p)p.dragging=false;
+      draggingId=null;
+    }
+    isPanning=false;
+    updateCursor();
+  });
+  canvas.addEventListener('pointerleave',function(){
+    if(!draggingId&&!isPanning){
+      hoveredId=null;
+      skyTip.hidden=true;
+      updateCursor();
+    }
+  });
+  canvas.addEventListener('wheel',function(e){
+    if(view!=='sky')return;
+    e.preventDefault();
+    var wx=(e.clientX-panX)/zoom;
+    var wy=(e.clientY-panY)/zoom;
+    var factor=e.deltaY<0?1.12:1/1.12;
+    var next=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,zoom*factor));
+    panX=e.clientX-wx*next;
+    panY=e.clientY-wy*next;
+    zoom=next;
+    hoveredId=null;
+    skyTip.hidden=true;
+  },{passive:false});
   window.addEventListener('resize',function(){
     if(view!=='sky')return;
     sizeSky();
