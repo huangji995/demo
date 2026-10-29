@@ -563,6 +563,24 @@ input[type=text].sending::placeholder{color:transparent}
 }
 .sky-toast.show{opacity:1;transform:translateX(-50%) translateY(0) rotate(-1deg)}
 
+/* 选择灵感关系弹窗 */
+.modal-card--compact{max-width:320px}
+.relation-options{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.relation-option{
+  display:flex;flex-direction:column;gap:2px;
+  text-align:left;padding:9px 12px;
+  border:var(--border-w) dashed var(--ink);
+  border-radius:var(--radius-sm);
+  background:var(--paper-2);color:var(--ink);
+  cursor:pointer;
+  transition:box-shadow .2s ease,transform .2s ease,background .2s ease;
+}
+.relation-option:hover{transform:translate(1px,1px);box-shadow:3px 3px 0 var(--marker-teal)}
+.relation-option .name{font-weight:700;font-size:13.5px}
+.relation-option .desc{font-size:11.5px;color:var(--muted)}
+.relation-option.parallel{color:#15803d;border-color:#22c55e;background:rgba(34,197,94,.09)}
+.relation-option.hierarchy{color:#c2410c;border-color:#f97316;background:rgba(249,115,22,.09)}
+
 /* 星空模式下的全局变体 */
 body.sky-mode{overflow:hidden;background-color:#0f1019;background-image:none}
 body.sky-mode .top{display:none}
@@ -663,7 +681,7 @@ body.sky-mode .monster{display:none}
   </div>
   <div class="sky-tip" id="skyTip" hidden></div>
   <div class="sky-toast" id="skyToast"></div>
-  <div class="sky-help">滚轮缩放 · 拖动空白平移 · 拖动光点移动</div>
+  <div class="sky-help">滚轮缩放 · 拖动空白平移 · 拖住光点连线 · Alt+拖动移动光点</div>
 </div>
 
 <div class="monster" id="monster" aria-hidden="true">
@@ -714,11 +732,32 @@ body.sky-mode .monster{display:none}
   </div>
 </div>
 
+<div class="modal-mask" id="relationMask" hidden>
+  <div class="modal-card modal-card--compact" role="dialog" aria-modal="true" aria-labelledby="relationTitle">
+    <h3 class="modal-title" id="relationTitle">选择灵感关系</h3>
+    <p class="modal-text" id="relationDesc"></p>
+    <div class="relation-options">
+      <button class="relation-option parallel" data-relation="parallel">
+        <span class="name">并列</span>
+        <span class="desc">绿色平滑实线 · 互相印证</span>
+      </button>
+      <button class="relation-option hierarchy" data-relation="hierarchy">
+        <span class="name">总分</span>
+        <span class="desc">橙色箭头虚线 · A 指向 B</span>
+      </button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="relationCancel">取消</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var KEY_CARDS='favorite_digester_cards';
   var KEY_META='favorite_digester_meta';
   var KEY_AI='favorite_digester_ai';
+  var KEY_EDGES='favorite_digester_edges';
   var VERSION=2;
   var REQUEST_TIMEOUT=60000;
   var MAX_INPUT=4000;
@@ -732,6 +771,7 @@ body.sky-mode .monster{display:none}
 
   var state={
     cards:[],
+    edges:[],
     meta:{seqCounter:1,version:VERSION},
     ai:{baseUrl:'',model:'',apiKey:''}
   };
@@ -778,6 +818,9 @@ body.sky-mode .monster{display:none}
   var skyWeave=document.getElementById('skyWeave');
   var skyTip=document.getElementById('skyTip');
   var skyToast=document.getElementById('skyToast');
+  var relationMask=document.getElementById('relationMask');
+  var relationDesc=document.getElementById('relationDesc');
+  var relationCancel=document.getElementById('relationCancel');
   var view='list';
   var particles=[];
   var noisePattern=null;
@@ -791,7 +834,17 @@ body.sky-mode .monster{display:none}
   var bgGrad=null;
   var stars=[];
   var hoveredId=null;
+  var hoveredEdgeId=null;
   var draggingId=null;
+  var linkSourceId=null;
+  var linkStartPos=null;
+  var linkPointer=null;
+  var isLinking=false;
+  var linkPressClientX=0;
+  var linkPressClientY=0;
+  var relationSourceId=null;
+  var relationTargetId=null;
+  var weaving=false;
   var isPanning=false;
   var panStartX=0;
   var panStartY=0;
@@ -850,9 +903,11 @@ body.sky-mode .monster{display:none}
       var rawCards=localStorage.getItem(KEY_CARDS);
       var rawMeta=localStorage.getItem(KEY_META);
       var rawAi=localStorage.getItem(KEY_AI);
+      var rawEdges=localStorage.getItem(KEY_EDGES);
       var cards=rawCards?JSON.parse(rawCards):[];
       var meta=rawMeta?JSON.parse(rawMeta):null;
       var ai=rawAi?JSON.parse(rawAi):null;
+      var edges=rawEdges?JSON.parse(rawEdges):[];
       state.cards=Array.isArray(cards)?cards.filter(isValidCard).map(function(c){
         return {
           id:c.id,
@@ -876,10 +931,30 @@ body.sky-mode .monster{display:none}
       state.ai=(ai&&typeof ai==='object')
         ?{baseUrl:String(ai.baseUrl||''),model:String(ai.model||''),apiKey:String(ai.apiKey||'')}
         :{baseUrl:'',model:'',apiKey:''};
+      state.edges=Array.isArray(edges)?edges.filter(function(edge){
+        if(!edge||typeof edge!=='object')return false;
+        if(typeof edge.source!=='string'||typeof edge.target!=='string')return false;
+        if(edge.source===edge.target)return false;
+        if(edge.type!=='parallel'&&edge.type!=='hierarchy')return false;
+        return !!state.cards.find(function(c){return c.id===edge.source;})
+          && !!state.cards.find(function(c){return c.id===edge.target;});
+      }).map(function(edge){
+        return {
+          id:typeof edge.id==='string'&&edge.id?edge.id:makeEdgeId(),
+          source:edge.source,
+          target:edge.target,
+          type:edge.type,
+          reason:typeof edge.reason==='string'?edge.reason:'',
+          ai:!!edge.ai,
+          bornAt:0
+        };
+      }):[];
+      state.edges.forEach(function(edge){linkCards(edge.source,edge.target);});
       var maxSeq=state.cards.reduce(function(m,c){return Math.max(m,c.seq);},0);
       if(state.meta.seqCounter<=maxSeq)state.meta.seqCounter=maxSeq+1;
     }catch(e){
       state.cards=[];
+      state.edges=[];
       state.meta={seqCounter:1,version:VERSION};
       state.ai={baseUrl:'',model:'',apiKey:''};
     }
@@ -888,6 +963,16 @@ body.sky-mode .monster{display:none}
     try{
       localStorage.setItem(KEY_CARDS,JSON.stringify(state.cards));
       localStorage.setItem(KEY_META,JSON.stringify(state.meta));
+      localStorage.setItem(KEY_EDGES,JSON.stringify(state.edges.map(function(edge){
+        return {
+          id:edge.id,
+          source:edge.source,
+          target:edge.target,
+          type:edge.type,
+          reason:edge.reason,
+          ai:edge.ai
+        };
+      })));
     }catch(e){}
   }
   function saveAI(){
@@ -1115,7 +1200,7 @@ body.sky-mode .monster{display:none}
   linkSave.addEventListener('click',saveLinks);
 
   document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'){closeDeleteModal();closeLinkModal();}
+    if(e.key==='Escape'){closeDeleteModal();closeLinkModal();closeRelationModal();}
   });
 
   /* ---------- 跳转并高亮关联卡片 ---------- */
@@ -1284,12 +1369,12 @@ body.sky-mode .monster{display:none}
       if(q.y>worldH-q.r){q.y=worldH-q.r;q.vy=-Math.abs(q.vy);}
     }
   }
-  function drawParticle(p,t,isHover){
+  function drawParticle(p,t,isHover,isLinking){
     var pulse=0.72+0.28*Math.sin(t*0.0016+p.phase);
     var r=p.r*(isHover?1.18:1);
-    if(isHover){
+    if(isHover||isLinking){
       ctx.save();
-      ctx.strokeStyle='rgba(255,254,245,.65)';
+      ctx.strokeStyle=isHover?'rgba(255,254,245,.78)':'rgba(255,254,245,.32)';
       ctx.lineWidth=1.4;
       ctx.setLineDash([4,4]);
       ctx.beginPath();
@@ -1339,13 +1424,30 @@ body.sky-mode .monster{display:none}
     ctx.save();
     ctx.translate(panX,panY);
     ctx.scale(zoom,zoom);
+    for(i=0;i<state.edges.length;i++)traceEdge(state.edges[i],t);
+    if(isLinking&&linkStartPos&&linkPointer){
+      ctx.save();
+      ctx.strokeStyle='rgba(255,254,245,.82)';
+      ctx.lineWidth=1.6;
+      ctx.setLineDash([5,5]);
+      ctx.beginPath();
+      ctx.moveTo(linkStartPos.x,linkStartPos.y);
+      ctx.lineTo(linkPointer.x,linkPointer.y);
+      ctx.stroke();
+      ctx.restore();
+    }
     var hovered=null;
     for(i=0;i<particles.length;i++){
       var p=particles[i];
-      if(p.id===hoveredId){hovered=p;continue;}
-      drawParticle(p,t,false);
+      if(!isLinking&&p.id===hoveredId){hovered=p;continue;}
+      drawParticle(p,t,false,isLinking);
     }
-    if(hovered)drawParticle(hovered,t,true);
+    if(isLinking){
+      var src=findParticle(linkSourceId);
+      if(src)drawParticle(src,t,true,true);
+    }else if(hovered){
+      drawParticle(hovered,t,true,false);
+    }
     ctx.restore();
   }
   function loop(){
@@ -1380,21 +1482,31 @@ body.sky-mode .monster{display:none}
     return best;
   }
   function updateCursor(){
-    canvas.style.cursor=draggingId?'grabbing':(isPanning?'grabbing':(hoveredId?'pointer':'grab'));
+    canvas.style.cursor=(draggingId||isPanning)?'grabbing':(isLinking?'crosshair':((hoveredId||hoveredEdgeId)?'pointer':'grab'));
+  }
+  function positionTip(sx,sy){
+    var tw=skyTip.offsetWidth,th=skyTip.offsetHeight;
+    var left=sx+16,top=sy-th-12;
+    if(left+tw>window.innerWidth-12)left=sx-tw-16;
+    if(top<12)top=sy+16;
+    skyTip.style.left=Math.max(12,left)+'px';
+    skyTip.style.top=Math.max(12,top)+'px';
   }
   function updateHover(sx,sy){
     var p=pickParticle(sx,sy);
+    var edge=p?null:pickEdge(sx,sy);
     hoveredId=p?p.id:null;
+    hoveredEdgeId=edge?edge.id:null;
     if(p){
       skyTip.hidden=false;
       skyTip.innerHTML='<strong>'+esc(p.fullTitle||p.label)+'</strong>'
         +(p.domain?'<span>'+esc(p.domain)+'</span>':'');
-      var tw=skyTip.offsetWidth,th=skyTip.offsetHeight;
-      var left=sx+16,top=sy-th-12;
-      if(left+tw>window.innerWidth-12)left=sx-tw-16;
-      if(top<12)top=sy+16;
-      skyTip.style.left=Math.max(12,left)+'px';
-      skyTip.style.top=Math.max(12,top)+'px';
+      positionTip(sx,sy);
+    }else if(edge){
+      skyTip.hidden=false;
+      skyTip.innerHTML='<strong>🔗 关系：'+relationLabel(edge.type)+'</strong>'
+        +(edge.reason?'<span>'+esc(edge.reason)+'</span>':'<span>手动建立的灵感连线</span>');
+      positionTip(sx,sy);
     }else{
       skyTip.hidden=true;
     }
@@ -1414,7 +1526,8 @@ body.sky-mode .monster{display:none}
       document.body.classList.add('sky-mode');
       skyView.hidden=false;
       panX=0;panY=0;zoom=1;
-      hoveredId=null;draggingId=null;isPanning=false;
+      hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
+      linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
       skyTip.hidden=true;
       sizeSky();
       buildParticles();
@@ -1424,7 +1537,8 @@ body.sky-mode .monster{display:none}
       skyView.hidden=true;
       document.body.classList.remove('sky-mode');
       listView.hidden=false;
-      hoveredId=null;draggingId=null;isPanning=false;
+      hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
+      linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
       skyTip.hidden=true;
     }
     updateViewSwitch();
@@ -1441,9 +1555,7 @@ body.sky-mode .monster{display:none}
     setView(b.dataset.view);
   });
   skyBack.addEventListener('click',function(){setView('list');});
-  skyWeave.addEventListener('click',function(){
-    skyToastShow('✨ AI 编织正在酝酿中…');
-  });
+  skyWeave.addEventListener('click',function(){runWeave();});
 
   canvas.addEventListener('pointerdown',function(e){
     if(view!=='sky')return;
@@ -1452,11 +1564,22 @@ body.sky-mode .monster{display:none}
     }
     var p=pickParticle(e.clientX,e.clientY);
     if(p){
-      draggingId=p.id;
-      p.dragging=true;
-      p.vx=0;p.vy=0;
-      dragOffX=(e.clientX-panX)/zoom-p.x;
-      dragOffY=(e.clientY-panY)/zoom-p.y;
+      if(e.altKey){
+        draggingId=p.id;
+        p.dragging=true;
+        p.vx=0;p.vy=0;
+        dragOffX=(e.clientX-panX)/zoom-p.x;
+        dragOffY=(e.clientY-panY)/zoom-p.y;
+      }else{
+        linkSourceId=p.id;
+        linkStartPos={x:p.x,y:p.y};
+        linkPointer={x:(e.clientX-panX)/zoom,y:(e.clientY-panY)/zoom};
+        isLinking=false;
+        linkPressClientX=e.clientX;
+        linkPressClientY=e.clientY;
+      }
+      hoveredId=p.id;
+      hoveredEdgeId=null;
       skyTip.hidden=true;
     }else{
       isPanning=true;
@@ -1478,6 +1601,13 @@ body.sky-mode .monster{display:none}
       }
       return;
     }
+    if(linkSourceId){
+      var mx=e.clientX-linkPressClientX,my=e.clientY-linkPressClientY;
+      if(!isLinking&&(mx*mx+my*my)>16)isLinking=true;
+      linkPointer={x:(e.clientX-panX)/zoom,y:(e.clientY-panY)/zoom};
+      updateCursor();
+      return;
+    }
     if(isPanning){
       panX=panStartPanX+(e.clientX-panStartX);
       panY=panStartPanY+(e.clientY-panStartY);
@@ -1487,6 +1617,16 @@ body.sky-mode .monster{display:none}
   });
   canvas.addEventListener('pointerup',function(e){
     if(view!=='sky')return;
+    if(linkSourceId){
+      var source=linkSourceId;
+      if(isLinking){
+        var target=pickParticle(e.clientX,e.clientY);
+        if(target&&target.id!==source)openRelationModal(source,target.id);
+      }
+      linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
+      updateHover(e.clientX,e.clientY);
+      return;
+    }
     if(draggingId){
       var p=findParticle(draggingId);
       if(p)p.dragging=false;
@@ -1501,12 +1641,14 @@ body.sky-mode .monster{display:none}
       if(p)p.dragging=false;
       draggingId=null;
     }
+    linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
     isPanning=false;
     updateCursor();
   });
   canvas.addEventListener('pointerleave',function(){
-    if(!draggingId&&!isPanning){
+    if(!draggingId&&!isPanning&&!isLinking&&!linkSourceId){
       hoveredId=null;
+      hoveredEdgeId=null;
       skyTip.hidden=true;
       updateCursor();
     }
@@ -1535,6 +1677,302 @@ body.sky-mode .monster{display:none}
     if(document.hidden){stopLoop();}
     else{startLoop();}
   });
+
+  /* ---------- 灵感连线：数据 ---------- */
+  function makeEdgeId(){
+    return 'e_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  }
+  function findCard(id){
+    return state.cards.find(function(c){return c.id===id;})||null;
+  }
+  function linkCards(aId,bId){
+    var a=findCard(aId),b=findCard(bId);
+    if(!a||!b||a===b)return;
+    if(!Array.isArray(a.linkedIds))a.linkedIds=[];
+    if(!Array.isArray(b.linkedIds))b.linkedIds=[];
+    if(a.linkedIds.indexOf(b.id)<0)a.linkedIds.push(b.id);
+    if(b.linkedIds.indexOf(a.id)<0)b.linkedIds.push(a.id);
+    a.updatedAt=Date.now();
+    b.updatedAt=Date.now();
+    var pa=findParticle(a.id),pb=findParticle(b.id);
+    if(pa)hydrateParticle(pa,a);
+    if(pb)hydrateParticle(pb,b);
+  }
+  function findEdgeBetween(aId,bId){
+    for(var i=0;i<state.edges.length;i++){
+      var e=state.edges[i];
+      if((e.source===aId&&e.target===bId)||(e.source===bId&&e.target===aId))return e;
+    }
+    return null;
+  }
+  function createEdge(sourceId,targetId,type,reason,ai){
+    if(!sourceId||!targetId||sourceId===targetId)return false;
+    if(findEdgeBetween(sourceId,targetId))return false;
+    state.edges.push({
+      id:makeEdgeId(),
+      source:sourceId,
+      target:targetId,
+      type:type==='hierarchy'?'hierarchy':'parallel',
+      reason:reason||'',
+      ai:!!ai,
+      bornAt:performance.now()
+    });
+    linkCards(sourceId,targetId);
+    save();
+    return true;
+  }
+  function relationLabel(type){
+    return type==='hierarchy'?'总分':'并列';
+  }
+
+  /* ---------- 灵感连线：几何与绘制 ---------- */
+  function edgeProgress(edge,t){
+    if(reduceMotion||!edge.bornAt)return 1;
+    var p=(t-edge.bornAt)/900;
+    return p<=0?0:(p>=1?1:p);
+  }
+  function edgeGeometry(edge){
+    var a=findParticle(edge.source),b=findParticle(edge.target);
+    if(!a||!b)return null;
+    var dx=b.x-a.x,dy=b.y-a.y;
+    var len=Math.sqrt(dx*dx+dy*dy);
+    if(len<2)return null;
+    var mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    var ux=-dy/len,uy=dx/len;
+    var sign=edge.id.charCodeAt(edge.id.length-1)%2?1:-1;
+    var bend=Math.max(16,Math.min(64,len*0.18))*sign;
+    var c={x:mx+ux*bend,y:my+uy*bend};
+    function trim(node,to,pad){
+      var vx=to.x-node.x,vy=to.y-node.y;
+      var d=Math.sqrt(vx*vx+vy*vy)||1;
+      return {x:node.x+vx/d*(node.r+pad),y:node.y+vy/d*(node.r+pad)};
+    }
+    var s=trim(a,c,3),e2=trim(b,c,5);
+    var steps=Math.max(14,Math.min(60,Math.round(len/7)));
+    var pts=[];
+    for(var i=0;i<=steps;i++){
+      var u=i/steps,mu=1-u;
+      pts.push({
+        x:mu*mu*s.x+2*mu*u*c.x+u*u*e2.x,
+        y:mu*mu*s.y+2*mu*u*c.y+u*u*e2.y
+      });
+    }
+    return {pts:pts,start:s,end:e2};
+  }
+  function traceEdge(edge,t){
+    var g=edgeGeometry(edge);
+    if(!g)return null;
+    var prog=edgeProgress(edge,t);
+    if(prog<=0)return null;
+    var max=Math.max(1,Math.floor((g.pts.length-1)*prog));
+    var color=edge.type==='hierarchy'?'#f97316':'#22c55e';
+    var hot=edge.ai&&edge.bornAt&&(t-edge.bornAt)<5200;
+    var flick=hot?0.55+0.45*Math.sin(t*0.024+edge.id.length):1;
+    ctx.save();
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.setLineDash(edge.type==='hierarchy'?[7,6]:[]);
+    ctx.globalAlpha=hot?0.34*flick:0.18;
+    ctx.strokeStyle=color;
+    ctx.lineWidth=hot?10:6;
+    ctx.shadowBlur=hot?26*flick:10;
+    ctx.shadowColor=color;
+    ctx.beginPath();
+    ctx.moveTo(g.pts[0].x,g.pts[0].y);
+    for(var i=1;i<=max;i++)ctx.lineTo(g.pts[i].x,g.pts[i].y);
+    ctx.stroke();
+
+    ctx.globalAlpha=hot?0.8+0.2*flick:0.95;
+    ctx.lineWidth=hot?2.8:2.2;
+    ctx.beginPath();
+    ctx.moveTo(g.pts[0].x,g.pts[0].y);
+    for(var k=1;k<=max;k++)ctx.lineTo(g.pts[k].x,g.pts[k].y);
+    ctx.stroke();
+
+    if(edge.type==='hierarchy'&&max>=2){
+      var tip=g.pts[max],prev=g.pts[max-1];
+      var ang=Math.atan2(tip.y-prev.y,tip.x-prev.x);
+      var size=hot?13:11;
+      ctx.globalAlpha=hot?flick:1;
+      ctx.fillStyle=color;
+      ctx.beginPath();
+      ctx.moveTo(tip.x,tip.y);
+      ctx.lineTo(tip.x-size*Math.cos(ang-0.42),tip.y-size*Math.sin(ang-0.42));
+      ctx.lineTo(tip.x-size*Math.cos(ang+0.42),tip.y-size*Math.sin(ang+0.42));
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+    return g.pts[max];
+  }
+  function pickEdge(sx,sy){
+    var wx=(sx-panX)/zoom,wy=(sy-panY)/zoom;
+    var best=null,bestD=11;
+    var t=performance.now();
+    for(var i=state.edges.length-1;i>=0;i--){
+      var edge=state.edges[i];
+      var g=edgeGeometry(edge);
+      if(!g)continue;
+      var prog=edgeProgress(edge,t);
+      if(prog<=0)continue;
+      var max=Math.max(1,Math.floor((g.pts.length-1)*prog));
+      for(var k=0;k<=max;k++){
+        var dx=wx-g.pts[k].x,dy=wy-g.pts[k].y;
+        var d=Math.sqrt(dx*dx+dy*dy);
+        if(d<bestD){bestD=d;best=edge;}
+      }
+    }
+    return best;
+  }
+
+  /* ---------- 手动选择关系弹窗 ---------- */
+  var relationHideTimer=null;
+  function openRelationModal(sourceId,targetId){
+    var a=findParticle(sourceId),b=findParticle(targetId);
+    if(!a||!b)return;
+    relationSourceId=sourceId;
+    relationTargetId=targetId;
+    relationDesc.textContent='#'+pad3(a.seq)+' '+a.label+'  →  #'+pad3(b.seq)+' '+b.label;
+    clearTimeout(relationHideTimer);
+    relationMask.hidden=false;
+    void relationMask.offsetWidth;
+    relationMask.classList.add('show');
+    relationCancel.focus();
+  }
+  function closeRelationModal(){
+    if(relationMask.hidden)return;
+    relationSourceId=null;
+    relationTargetId=null;
+    relationMask.classList.remove('show');
+    clearTimeout(relationHideTimer);
+    relationHideTimer=setTimeout(function(){relationMask.hidden=true;},260);
+  }
+  function chooseRelation(type){
+    var s=relationSourceId,t=relationTargetId;
+    closeRelationModal();
+    if(!s||!t)return;
+    if(createEdge(s,t,type,'',false)){
+      skyToastShow('🔗 已建立「'+relationLabel(type)+'」关系');
+      drawSky();
+    }else{
+      skyToastShow('这两张卡片之间已经有连线了');
+    }
+  }
+  relationMask.addEventListener('click',function(e){
+    if(e.target===relationMask)closeRelationModal();
+  });
+  relationMask.querySelectorAll('[data-relation]').forEach(function(btn){
+    btn.addEventListener('click',function(){chooseRelation(btn.dataset.relation);});
+  });
+  relationCancel.addEventListener('click',closeRelationModal);
+
+  /* ---------- AI 编织 ---------- */
+  var WEAVE_SYSTEM_PROMPT='你是知识图谱编织助手。输入是卡片列表（ref 为卡片编号）。请找出彼此关联最强的卡片对，只返回 JSON 数组，不要输出解释或代码块。每项格式：{"source":<ref>,"target":<ref>,"type":"parallel"|"hierarchy","reason":"不超过40字的中文说明"}。要求：source 与 target 必须是不同卡片的 ref 且都出现在输入中；parallel 表示并列/互相印证，hierarchy 表示总分（source 为总，target 为分）；最多 12 条，只保留最紧密的关联；reason 必填。';
+  function parseWeaveResult(text){
+    var s=String(text||'').trim();
+    if(!s)return null;
+    var a=s.indexOf('['),b=s.lastIndexOf(']');
+    if(a<0||b<=a)return null;
+    try{
+      var arr=JSON.parse(s.slice(a,b+1));
+      return Array.isArray(arr)?arr:null;
+    }catch(e){return null;}
+  }
+  function normalizeRelationType(type){
+    var v=String(type||'').toLowerCase();
+    if(v==='hierarchy'||v==='total'||v.indexOf('总分')>=0)return 'hierarchy';
+    return 'parallel';
+  }
+  function cardByRef(ref){
+    var n=Number(ref);
+    var bySeq=state.cards.find(function(c){return c.seq===n;});
+    if(bySeq)return bySeq;
+    var byId=findCard(String(ref));
+    if(byId)return byId;
+    if(n>0&&n<=state.cards.length)return state.cards[n-1];
+    return null;
+  }
+  async function runWeave(){
+    if(weaving)return;
+    if(!state.ai.baseUrl||!state.ai.model||!state.ai.apiKey){
+      skyToastShow('⚠️ 请先在「手账列表」配置 AI 设置');
+      return;
+    }
+    if(state.cards.length<2){
+      skyToastShow('至少需要两张卡片才能编织灵感');
+      return;
+    }
+    weaving=true;
+    var label=skyWeave.textContent;
+    skyWeave.disabled=true;
+    skyWeave.textContent='⏳ 编织中…';
+    var ctrl=new AbortController();
+    var timer=setTimeout(function(){ctrl.abort();},REQUEST_TIMEOUT);
+    try{
+      var payload=state.cards.map(function(c){
+        return {
+          ref:c.seq,
+          title:c.title,
+          summary:c.aiSummary||shorten(c.content,80),
+          domain:c.type==='link'?hostOf(c.content):'',
+          tags:c.tags||[]
+        };
+      });
+      var res=await fetch(chatEndpoint(state.ai.baseUrl),{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+state.ai.apiKey},
+        body:JSON.stringify({
+          model:state.ai.model,
+          temperature:0.2,
+          messages:[
+            {role:'system',content:WEAVE_SYSTEM_PROMPT},
+            {role:'user',content:JSON.stringify(payload)}
+          ]
+        }),
+        signal:ctrl.signal
+      });
+      if(!res.ok){
+        var detail='';
+        try{detail=(await res.text()).slice(0,160);}catch(e2){}
+        throw new Error('HTTP '+res.status+(detail?' · '+detail:''));
+      }
+      var data=await res.json();
+      var text=data&&data.choices&&data.choices[0]&&data.choices[0].message
+        ?data.choices[0].message.content:'';
+      var items=parseWeaveResult(text);
+      if(!items||!items.length){
+        skyToastShow('AI 没有发现新的灵感连线');
+        return;
+      }
+      var added=0,now=performance.now();
+      items.slice(0,12).forEach(function(item){
+        if(!item||typeof item!=='object')return;
+        var s=cardByRef(item.source),t=cardByRef(item.target);
+        if(!s||!t||s.id===t.id)return;
+        if(findEdgeBetween(s.id,t.id))return;
+        state.edges.push({
+          id:makeEdgeId(),
+          source:s.id,
+          target:t.id,
+          type:normalizeRelationType(item.type),
+          reason:shorten(item.reason||'',60),
+          ai:true,
+          bornAt:now+added*140
+        });
+        linkCards(s.id,t.id);
+        added++;
+      });
+      if(added){buildParticles();save();drawSky();}
+      skyToastShow(added?('✨ 编织完成：新增 '+added+' 条灵感连线'):'AI 没有发现新的灵感连线');
+    }catch(err){
+      skyToastShow('编织失败：'+describeError(err));
+    }finally{
+      clearTimeout(timer);
+      weaving=false;
+      skyWeave.disabled=false;
+      skyWeave.textContent=label;
+    }
+  }
 
   /* ---------- 卡片渲染 ---------- */
   function cardHTML(c){
@@ -1664,6 +2102,11 @@ body.sky-mode .monster{display:none}
         c.linkedIds=c.linkedIds.filter(function(x){return x!==id;});
       }
     });
+    state.edges=state.edges.filter(function(edge){
+      return edge.source!==id&&edge.target!==id;
+    });
+    var gone=findParticle(id);
+    if(gone)particles=particles.filter(function(p){return p.id!==id;});
     save();
     if(cardEl){
       cardEl.classList.add('leaving');
