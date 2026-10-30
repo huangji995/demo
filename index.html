@@ -527,6 +527,8 @@ input[type=text].sending::placeholder{color:transparent}
 .sky-btn:focus-visible{outline:none;box-shadow:2px 2px 0 var(--marker-yellow)}
 .sky-help{
   position:absolute;right:18px;bottom:14px;z-index:15;
+  max-width:calc(100vw - 36px);
+  text-align:right;line-height:1.6;
   font-size:11.5px;font-style:italic;letter-spacing:.4px;
   color:rgba(255,254,245,.42);
   pointer-events:none;
@@ -547,6 +549,19 @@ input[type=text].sending::placeholder{color:transparent}
 }
 .sky-tip strong{display:block;font-weight:700;word-break:break-word}
 .sky-tip span{display:block;margin-top:3px;font-size:11.5px;color:rgba(44,44,44,.6)}
+.sky-tip .tip-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.sky-tip .tip-tag{
+  display:inline-block;margin-top:0;
+  padding:1px 6px;
+  font-size:10.5px;font-weight:700;font-style:normal;line-height:1.5;
+  color:#2c2c2c;
+  border:1.5px dashed #2c2c2c;
+  border-radius:var(--radius-sm);
+  background:rgba(255,217,61,.6);
+  transform:rotate(-1deg);
+}
+.sky-tip .tip-tag:nth-child(2n){background:rgba(78,205,196,.5);transform:rotate(1deg)}
+.sky-tip .tip-tag:nth-child(3n){background:rgba(255,107,107,.4);transform:rotate(-2deg)}
 .sky-toast{
   position:fixed;left:50%;bottom:42px;z-index:30;
   padding:9px 16px;
@@ -681,7 +696,7 @@ body.sky-mode .monster{display:none}
   </div>
   <div class="sky-tip" id="skyTip" hidden></div>
   <div class="sky-toast" id="skyToast"></div>
-  <div class="sky-help">滚轮缩放 · 右键平移 · 左键划线切线 · 拖光点连线 · Alt+拖拽星团</div>
+  <div class="sky-help">滚轮缩放 · 右键平移 · 左键划线切线 · 拖光点连线 · Alt+拖拽星团 · 点击光点聚焦</div>
 </div>
 
 <div class="monster" id="monster" aria-hidden="true">
@@ -835,6 +850,7 @@ body.sky-mode .monster{display:none}
   var stars=[];
   var hoveredId=null;
   var hoveredEdgeId=null;
+  var focusId=null;
   var draggingId=null;
   var linkSourceId=null;
   var linkStartPos=null;
@@ -1210,7 +1226,13 @@ body.sky-mode .monster{display:none}
   linkSave.addEventListener('click',saveLinks);
 
   document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'){closeDeleteModal();closeLinkModal();closeRelationModal();}
+    if(e.key==='Escape'){
+      closeDeleteModal();closeLinkModal();closeRelationModal();
+      if(focusId){
+        focusId=null;
+        if(view==='sky'&&reduceMotion)drawSky();
+      }
+    }
   });
 
   /* ---------- 跳转并高亮关联卡片 ---------- */
@@ -1300,8 +1322,9 @@ body.sky-mode .monster{display:none}
     p.label=shorten(c.title||c.content,MAX_LABEL);
     p.fullTitle=c.title||c.content;
     p.domain=c.type==='link'?hostOf(c.content):'';
+    p.tags=Array.isArray(c.tags)?c.tags.slice(0,4):[];
     p.linked=Array.isArray(c.linkedIds)&&c.linkedIds.length>0;
-    p.r=(p.linked?30:23)+(c.seq%3)*2;
+    p.r=(p.linked?32:21)+(c.seq%3)*2;
   }
   function buildParticles(){
     if(!worldW||!worldH)return;
@@ -1328,6 +1351,7 @@ body.sky-mode .monster{display:none}
       next.push(np);
     });
     particles=next;
+    if(focusId&&!findParticle(focusId))focusId=null;
   }
   function clampParticles(){
     particles.forEach(function(p){
@@ -1501,11 +1525,26 @@ body.sky-mode .monster{display:none}
       }
     }
   }
-  function drawParticle(p,t,isHover,isLinking){
+  function drawParticle(p,t,isHover,isLinking,alpha,focus){
+    alpha=(alpha===undefined)?1:alpha;
     var pulse=0.72+0.28*Math.sin(t*0.0016+p.phase);
-    var r=p.r*(isHover?1.18:1);
+    var r=p.r*(focus?1.32:(isHover?1.18:1));
+    if(focus){
+      ctx.save();
+      ctx.globalAlpha=0.92;
+      ctx.strokeStyle='rgba(255,217,61,.94)';
+      ctx.lineWidth=2.2;
+      ctx.setLineDash([5,4]);
+      ctx.shadowBlur=16;
+      ctx.shadowColor='#ffd93d';
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,r+10,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
     if(isHover||isLinking){
       ctx.save();
+      ctx.globalAlpha=alpha;
       ctx.strokeStyle=isHover?'rgba(255,254,245,.78)':'rgba(255,254,245,.32)';
       ctx.lineWidth=1.4;
       ctx.setLineDash([4,4]);
@@ -1515,18 +1554,20 @@ body.sky-mode .monster{display:none}
       ctx.restore();
     }
     ctx.save();
-    ctx.shadowBlur=(isHover?26:18)*pulse;
+    ctx.globalAlpha=alpha;
+    ctx.shadowBlur=(focus?36:(isHover?26:(p.linked?24:14)))*pulse;
     ctx.shadowColor=p.color;
-    ctx.lineWidth=2;
+    ctx.lineWidth=focus?2.8:(p.linked?2.4:2);
     ctx.strokeStyle=p.color;
-    ctx.fillStyle=isHover?'rgba(40,44,70,.78)':'rgba(26,28,44,.55)';
+    ctx.fillStyle=focus?'rgba(50,56,88,.92)':(isHover?'rgba(40,44,70,.78)':'rgba(26,28,44,.55)');
     blobPath(p.x,p.y,r,p.seed);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
 
     ctx.save();
-    ctx.font='700 10.5px "Comic Sans MS","Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.globalAlpha=alpha;
+    ctx.font='700 '+(focus?12:10.5)+'px "Comic Sans MS","Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif';
     ctx.textAlign='center';
     ctx.textBaseline='middle';
     ctx.fillStyle='rgba(255,254,245,.92)';
@@ -1619,7 +1660,26 @@ body.sky-mode .monster{display:none}
     ctx.save();
     ctx.translate(panX,panY);
     ctx.scale(zoom,zoom);
-    for(i=0;i<state.edges.length;i++)traceEdge(state.edges[i],t);
+    var focusP=null;
+    var related=null;
+    if(focusId&&!isLinking){
+      focusP=findParticle(focusId);
+      if(focusP){
+        related={};
+        related[focusP.id]=true;
+        for(i=0;i<state.edges.length;i++){
+          var fe=state.edges[i];
+          if(fe.source===focusP.id)related[fe.target]=true;
+          else if(fe.target===focusP.id)related[fe.source]=true;
+        }
+      }
+    }
+    for(i=0;i<state.edges.length;i++){
+      var edge=state.edges[i];
+      var edgeAlpha=1;
+      if(focusP)edgeAlpha=(edge.source===focusP.id||edge.target===focusP.id)?1:0.1;
+      traceEdge(edge,t,edgeAlpha);
+    }
     drawCutAnims(t);
     if(isLinking&&linkStartPos&&linkPointer){
       ctx.save();
@@ -1635,14 +1695,19 @@ body.sky-mode .monster{display:none}
     var hovered=null;
     for(i=0;i<particles.length;i++){
       var p=particles[i];
+      if(focusP&&p.id===focusP.id)continue;
       if(!isLinking&&p.id===hoveredId){hovered=p;continue;}
-      drawParticle(p,t,false,isLinking);
+      var pa=focusP?(related[p.id]?1:0.1):1;
+      drawParticle(p,t,false,isLinking,pa,false);
     }
     if(isLinking){
       var src=findParticle(linkSourceId);
-      if(src)drawParticle(src,t,true,true);
+      if(src)drawParticle(src,t,true,true,1,false);
+    }else if(focusP){
+      drawParticle(focusP,t,false,false,1,true);
+      if(hovered)drawParticle(hovered,t,true,false,related[hovered.id]?1:0.1,false);
     }else if(hovered){
-      drawParticle(hovered,t,true,false);
+      drawParticle(hovered,t,true,false,1,false);
     }
     drawSliceTrail(t);
     ctx.restore();
@@ -1674,7 +1739,8 @@ body.sky-mode .monster{display:none}
       var p=particles[i];
       var dx=wx-p.x,dy=wy-p.y;
       var d=Math.sqrt(dx*dx+dy*dy);
-      if(d<=p.r*1.12&&d<bestD){best=p;bestD=d;}
+      var hitScale=(focusId===p.id)?1.32:1;
+      if(d<=p.r*hitScale*1.12&&d<bestD){best=p;bestD=d;}
     }
     return best;
   }
@@ -1695,9 +1761,16 @@ body.sky-mode .monster{display:none}
     hoveredId=p?p.id:null;
     hoveredEdgeId=edge?edge.id:null;
     if(p){
+      var tagHTML='';
+      if(p.tags&&p.tags.length){
+        tagHTML='<div class="tip-tags">'+p.tags.map(function(tag){
+          return '<span class="tip-tag">'+esc(tag)+'</span>';
+        }).join('')+'</div>';
+      }
       skyTip.hidden=false;
       skyTip.innerHTML='<strong>'+esc(p.fullTitle||p.label)+'</strong>'
-        +(p.domain?'<span>'+esc(p.domain)+'</span>':'');
+        +(p.domain?'<span>'+esc(p.domain)+'</span>':'')
+        +tagHTML;
       positionTip(sx,sy);
     }else if(edge){
       skyTip.hidden=false;
@@ -1726,6 +1799,7 @@ body.sky-mode .monster{display:none}
       hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
       slicing=false;sliceMoved=false;slicePoints=[];dragGroupOffsets=null;cutAnims=[];
+      focusId=null;
       skyTip.hidden=true;
       sizeSky();
       buildParticles();
@@ -1735,9 +1809,10 @@ body.sky-mode .monster{display:none}
       skyView.hidden=true;
       document.body.classList.remove('sky-mode');
       listView.hidden=false;
-      hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
+hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
       slicing=false;sliceMoved=false;slicePoints=[];dragGroupOffsets=null;
+      focusId=null;
       skyTip.hidden=true;
     }
     updateViewSwitch();
@@ -1801,6 +1876,10 @@ body.sky-mode .monster{display:none}
       skyTip.hidden=true;
     }else{
       /* 左键空白：进入划线待命，只有真正移动后才切断 */
+      if(focusId){
+        focusId=null;
+        if(reduceMotion)drawSky();
+      }
       slicing=true;
       sliceMoved=false;
       slicePoints=[];
@@ -1847,7 +1926,7 @@ body.sky-mode .monster{display:none}
     }
     if(linkSourceId){
       var mx2=e.clientX-linkPressClientX,my2=e.clientY-linkPressClientY;
-      if(!isLinking&&(mx2*mx2+my2*my2)>16)isLinking=true;
+      if(!isLinking&&(mx2*mx2+my2*my2)>36)isLinking=true;
       linkPointer={x:(e.clientX-panX)/zoom,y:(e.clientY-panY)/zoom};
       updateCursor();
       return;
@@ -1875,8 +1954,12 @@ body.sky-mode .monster{display:none}
       if(isLinking){
         var target=pickParticle(e.clientX,e.clientY);
         if(target&&target.id!==source)openRelationModal(source,target.id);
+      }else{
+        var hit=pickParticle(e.clientX,e.clientY);
+        if(hit&&hit.id===source)focusId=(focusId===source)?null:source;
       }
       linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
+      if(reduceMotion)drawSky();
       updateHover(e.clientX,e.clientY);
       return;
     }
@@ -2087,7 +2170,8 @@ body.sky-mode .monster{display:none}
     }
     return {pts:pts,start:s,end:e2};
   }
-  function traceEdge(edge,t){
+  function traceEdge(edge,t,alpha){
+    alpha=(alpha===undefined)?1:alpha;
     var g=edgeGeometry(edge);
     if(!g)return null;
     var prog=edgeProgress(edge,t);
@@ -2100,7 +2184,7 @@ body.sky-mode .monster{display:none}
     ctx.lineCap='round';
     ctx.lineJoin='round';
     ctx.setLineDash(edge.type==='hierarchy'?[7,6]:[]);
-    ctx.globalAlpha=hot?0.34*flick:0.18;
+    ctx.globalAlpha=(hot?0.34*flick:0.18)*alpha;
     ctx.strokeStyle=color;
     ctx.lineWidth=hot?10:6;
     ctx.shadowBlur=hot?26*flick:10;
@@ -2110,7 +2194,7 @@ body.sky-mode .monster{display:none}
     for(var i=1;i<=max;i++)ctx.lineTo(g.pts[i].x,g.pts[i].y);
     ctx.stroke();
 
-    ctx.globalAlpha=hot?0.8+0.2*flick:0.95;
+    ctx.globalAlpha=(hot?0.8+0.2*flick:0.95)*alpha;
     ctx.lineWidth=hot?2.8:2.2;
     ctx.beginPath();
     ctx.moveTo(g.pts[0].x,g.pts[0].y);
@@ -2121,7 +2205,7 @@ body.sky-mode .monster{display:none}
       var tip=g.pts[max],prev=g.pts[max-1];
       var ang=Math.atan2(tip.y-prev.y,tip.x-prev.x);
       var size=hot?13:11;
-      ctx.globalAlpha=hot?flick:1;
+      ctx.globalAlpha=(hot?flick:1)*alpha;
       ctx.fillStyle=color;
       ctx.beginPath();
       ctx.moveTo(tip.x,tip.y);
