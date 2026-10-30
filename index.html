@@ -650,7 +650,7 @@ body.sky-mode .monster{display:none}
       <input id="input" type="text" placeholder="粘贴链接，或写下想消化的内容…" autocomplete="off" spellcheck="false">
       <button id="submit" class="btn primary" disabled>投递</button>
     </div>
-    <p class="hint">数据仅保存在本机浏览器；只有你点击「AI 提炼」时，该条内容才会发送给你自己配置的模型服务。</p>
+    <p class="hint">数据仅保存在本机浏览器；点击「AI 提炼」时，链接卡片会先经 r.jina.ai 读取网页正文（失败则仅用标题），再连同内容发送给你自己配置的模型服务。</p>
   </section>
 
   <section class="settings" id="settings" hidden>
@@ -695,7 +695,7 @@ body.sky-mode .monster{display:none}
     <button class="sky-btn" id="skyWeave">✨ AI 编织</button>
   </div>
   <div class="sky-tip" id="skyTip" hidden></div>
-  <div class="sky-toast" id="skyToast"></div>
+
   <div class="sky-help">滚轮缩放 · 右键平移 · 左键划线切线 · 拖光点连线 · Alt+拖拽星团 · 点击光点聚焦</div>
 </div>
 
@@ -723,6 +723,8 @@ body.sky-mode .monster{display:none}
     <path class="m-mouth-open" d="M50 88 Q70 76 90 88 Q92 112 70 116 Q48 112 50 88 Z"/>
   </svg>
 </div>
+
+<div class="sky-toast" id="skyToast"></div>
 
 <div class="modal-mask" id="modalMask" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -775,8 +777,10 @@ body.sky-mode .monster{display:none}
   var KEY_EDGES='favorite_digester_edges';
   var VERSION=2;
   var REQUEST_TIMEOUT=60000;
+  var JINA_TIMEOUT=20000;
+  var ARTICLE_MAX=3000;
   var MAX_INPUT=4000;
-  var SYSTEM_PROMPT='你是收藏内容消化助手。请用中文提炼这段收藏内容的要点与可用结论，2-3 句、不超过 120 字，不要客套话，直接输出结论。';
+  var SYSTEM_PROMPT='你是收藏内容消化助手。请阅读用户提供的文章正文或标题，只返回一个 JSON 对象，不要输出解释、不要使用代码块。格式：{"summary":"一句话摘要，不超过60字，直接给结论","tags":["标签1","标签2","标签3"]}。tags 必须是 3 个简短的中文标签，每个不超过 6 个字，不要带 # 号，不要重复。';
   var STATUS_TEXT={pending:'待消化',done:'已消化',archived:'归档'};
   var EMPTY_TEXT={
     pending:'还没有待消化的内容，投递第一条吧。',
@@ -923,6 +927,57 @@ body.sky-mode .monster{display:none}
     return /\/chat\/completions$/.test(b)?b:b+'/chat/completions';
   }
   function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  function isHttpUrl(v){
+    return /^https?:\/\//i.test(String(v||'').trim());
+  }
+  function extractWebArticle(url,timeoutMs){
+    var ctrl=new AbortController();
+    var timer=setTimeout(function(){ctrl.abort();},timeoutMs||JINA_TIMEOUT);
+    return fetch('https://r.jina.ai/'+String(url).trim(),{
+      method:'GET',
+      headers:{'Accept':'text/plain'},
+      signal:ctrl.signal
+    }).then(function(res){
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      return res.text();
+    }).then(function(text){
+      var body=String(text||'').trim();
+      if(!body)throw new Error('抓取内容为空');
+      return body.substring(0,ARTICLE_MAX);
+    }).finally(function(){
+      clearTimeout(timer);
+    });
+  }
+  function parseSummaryResult(text){
+    var s=String(text||'').trim();
+    if(!s)return {summary:'',tags:[]};
+    var a=s.indexOf('{'),b=s.lastIndexOf('}');
+    if(a>=0&&b>a){
+      try{
+        var obj=JSON.parse(s.slice(a,b+1));
+        var summary=String(obj.summary||obj.aiSummary||'').trim();
+        var tags=Array.isArray(obj.tags)
+          ? obj.tags.map(function(t){return String(t).replace(/^#+/,'').trim();})
+              .filter(function(t){return !!t&&t.length<=12;})
+              .slice(0,3)
+          : [];
+        if(summary||tags.length)return {summary:summary||s,tags:tags};
+      }catch(e){}
+    }
+    return {summary:s,tags:[]};
+  }
+  function updateCardTags(cardEl,tags){
+    if(!Array.isArray(tags)||!tags.length)return;
+    var html=tags.map(function(t){return '<span class="tag-chip">#'+esc(t)+'</span>';}).join('');
+    var el=cardEl.querySelector('.card-tags');
+    if(el){el.innerHTML=html;return;}
+    var anchor=cardEl.querySelector('.card-title');
+    if(!anchor)return;
+    el=document.createElement('div');
+    el.className='card-tags';
+    el.innerHTML=html;
+    anchor.insertAdjacentElement('afterend',el);
+  }
 
   function load(){
     try{
@@ -2558,6 +2613,33 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
     await spawnPlane(btn.getBoundingClientRect());
     monsterChew(true);
 
+    var limited=false;
+    var article='';
+    if(isHttpUrl(rec.content)){
+      monsterSay('小怪物正在阅读原文…');
+      try{
+        article=await extractWebArticle(rec.content,JINA_TIMEOUT);
+      }catch(fetchErr){
+        article='';
+        limited=true;
+        skyToastShow('网页抓取受限，仅基于标题提炼');
+      }
+      monsterSay('小怪物正在消化…');
+    }
+
+    var titleText=rec.title||(rec.type==='link'?hostOf(rec.content):shorten(rec.content,40));
+    var userContent;
+    if(article){
+      userContent='这是文章《'+titleText+'》的正文内容：\n\n'+article
+        +'\n\n请基于以上正文，为我生成一句话摘要（summary）和 3 个标签（tags）。';
+    }else if(limited){
+      userContent='这是文章《'+titleText+'》的标题：'+titleText
+        +'。网页正文抓取受限，请仅基于标题，为我生成一句话摘要（summary）和 3 个标签（tags）。';
+    }else{
+      userContent='这是内容《'+titleText+'》：\n'+rec.content.slice(0,MAX_INPUT)
+        +'\n\n请基于以上内容，为我生成一句话摘要（summary）和 3 个标签（tags）。';
+    }
+
     try{
       var res=await fetch(chatEndpoint(state.ai.baseUrl),{
         method:'POST',
@@ -2570,7 +2652,7 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
           temperature:0.3,
           messages:[
             {role:'system',content:SYSTEM_PROMPT},
-            {role:'user',content:rec.content.slice(0,MAX_INPUT)}
+            {role:'user',content:userContent}
           ]
         }),
         signal:ctrl.signal
@@ -2587,15 +2669,18 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
         ?data.choices[0].message.content:'';
       if(!text||!String(text).trim())throw new Error('模型返回内容为空');
 
-      rec.aiSummary=String(text).trim();
+      var parsed=parseSummaryResult(text);
+      rec.aiSummary=parsed.summary;
       rec.aiSummaryAt=Date.now();
+      if(parsed.tags.length)rec.tags=parsed.tags;
       save();
 
       box.hidden=false;
       box.className='ai-summary';
       box.textContent=rec.aiSummary;
+      if(parsed.tags.length)updateCardTags(cardEl,parsed.tags);
       btn.textContent='✨ 重新提炼';
-      setConfigState('提炼完成，结果已保存到本机');
+      setConfigState(limited?'网页抓取受限，仅基于标题完成提炼':'提炼完成，结果已保存到本机');
     }catch(err){
       box.hidden=false;
       box.className='ai-summary error';
