@@ -1,0 +1,24 @@
+# ── 工具 / AI 助手产物（不进仓库）──────────────────────────────
+.agents/
+.claude/
+.codeartsdoer/
+skills-lock.json
+
+# ── 发布流程临时文件（含敏感凭证，禁止入库）─────────────────────
+sts-creds.json
+sts-creds.sh
+params.json
+spawn.out
+app.pid
+screenshot-gate-ok
+
+# ── 可再生产物 / 本地备份 ───────────────────────────────────────
+detail.zip
+cover-manual.png
+发布指南.md
+
+# ── 其他 ───────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

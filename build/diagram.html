@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1280px;
+    background: #fffef5;
+    color: #2c2c2c;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    padding: 48px 56px;
+  }
+  .title { font-size: 30px; font-weight: 700; letter-spacing: 1px; }
+  .subtitle { margin-top: 8px; font-size: 15px; color: #6b6b6b; }
+  .layers { margin-top: 34px; display: flex; flex-direction: column; gap: 18px; }
+  .layer {
+    border: 2px dashed #2c2c2c;
+    border-radius: 2px;
+    background: #f8f3e2;
+    padding: 16px 20px;
+    box-shadow: 4px 4px 0 #4ecdc4;
+  }
+  .layer .name { font-size: 17px; font-weight: 700; }
+  .layer .desc { margin-top: 6px; font-size: 13.5px; color: #555; line-height: 1.7; }
+  .row { display: flex; gap: 18px; }
+  .row .layer { flex: 1; }
+  .box {
+    border: 2px dashed #2c2c2c;
+    border-radius: 2px;
+    background: #ffffff;
+    padding: 14px 16px;
+    box-shadow: 3px 3px 0 #4ecdc4;
+  }
+  .box .name { font-size: 16px; font-weight: 700; }
+  .box .desc { margin-top: 5px; font-size: 13px; color: #555; line-height: 1.65; }
+  .accent-blue { background: #eaf1fb; }
+  .accent-yellow { background: #fff6d9; }
+  .accent-teal { background: #e6f7f5; }
+  .arrow { text-align: center; font-size: 20px; color: #ff6b6b; font-weight: 700; line-height: 1; }
+  .footer { margin-top: 30px; font-size: 13px; color: #6b6b6b; }
+</style>
+</head>
+<body>
+  <div class="title">收藏消化助手 · 系统架构</div>
+  <div class="subtitle">单文件纯前端应用：手账卡片 + 灵感星空 + AI 提炼</div>
+
+  <div class="layers">
+    <div class="layer accent-blue">
+      <div class="name">界面层（原生 HTML / CSS / Canvas）</div>
+      <div class="desc">手账卡片列表与视图切换 · 全屏星空画布 · 自定义手绘风弹窗与小怪物动画 · 毛玻璃操作便签</div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="layer accent-teal">
+      <div class="name">交互与渲染层</div>
+      <div class="desc">手势状态机：左键拖空白平移 / 左键拖光点移动 / Alt+左键划线切断 / Ctrl 或 Cmd+左键橡皮筋连线 / 点击聚焦<br>
+      Canvas 2D 物理引擎：星团连通分量 · 无限画布（无边界反弹）· 优雅漂移（长期基础速度向量 + 极缓曲率）· 组间排斥 · 坐标重定中心</div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="row">
+      <div class="box">
+        <div class="name">数据层</div>
+        <div class="desc">卡片 · 标签 · 笔记 · 连线关系 · AI 配置，全部保存在浏览器 localStorage，不上传服务器</div>
+      </div>
+      <div class="box accent-yellow">
+        <div class="name">能力层</div>
+        <div class="desc">AI 提炼（摘要 / 要点 / 思考题 / 标签，防幻觉约束 + 自适应渲染）<br>AI 编织（关系 JSON 数组 → 自动绘线）<br>文本防呆与长文折叠</div>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="row">
+      <div class="box">
+        <div class="name">Jina Reader</div>
+        <div class="desc">GET r.jina.ai/&lt;链接&gt; 抓取网页正文为 Markdown，截断 3000 字符，失败自动降级为仅用标题</div>
+      </div>
+      <div class="box">
+        <div class="name">大模型 API</div>
+        <div class="desc">OpenAI 兼容 Chat Completions（如 ModelScope / DeepSeek），由用户自行配置地址、模型与密钥，仅存本机</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">技术栈：原生 HTML / CSS / JavaScript / Canvas 2D　·　零框架　·　零依赖　·　零构建</div>
+</body>
+</html>
