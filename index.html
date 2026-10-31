@@ -267,24 +267,74 @@ input[type=text].sending::placeholder{color:transparent}
 .card-title a::after{content:"↗";font-size:11px;color:var(--muted);margin-left:4px;vertical-align:super;text-decoration:none}
 
 /* 手账贴纸标签 */
-.card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.card-tags{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
 .tag-chip{
-  font-size:11px;font-weight:700;padding:2px 8px;white-space:nowrap;
+  position:relative;
+  display:inline-flex;align-items:center;
+  font-size:11px;font-weight:700;line-height:1;white-space:nowrap;
+  padding:3px 8px;
   border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
   transform:rotate(-1deg);
 }
-.card-tags .tag-chip:nth-child(3n+1){background:rgba(255,217,61,.62)}
-.card-tags .tag-chip:nth-child(3n+2){background:rgba(78,205,196,.5)}
-.card-tags .tag-chip:nth-child(3n){background:rgba(255,107,107,.42)}
+.tag-chip{background:rgba(122,170,235,.34)}
+.tag-chip.user{background:rgba(255,217,61,.72);transform:rotate(1.2deg)}
+.tag-chip .tag-x{
+  margin-left:5px;width:14px;height:14px;line-height:12px;text-align:center;
+  font-size:11px;font-weight:700;padding:0;
+  border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
+  background:var(--paper);color:var(--ink);cursor:pointer;
+  opacity:0;transform:scale(.7);
+  transition:opacity .16s ease,transform .16s ease,background .16s ease,color .16s ease;
+}
+.tag-chip:hover .tag-x,.tag-chip:focus-within .tag-x{opacity:1;transform:scale(1)}
+.tag-chip .tag-x:hover{background:var(--marker-red);color:var(--paper)}
+.tag-add{
+  font:inherit;font-size:11px;font-weight:700;line-height:1;
+  padding:3px 8px;
+  border:1.5px dashed var(--muted);border-radius:var(--radius-sm);
+  background:transparent;color:var(--muted);cursor:pointer;
+  transform:rotate(-1deg);
+  transition:color .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.tag-add:hover{color:var(--ink);border-color:var(--ink);background:var(--paper-2);box-shadow:2px 2px 0 var(--marker-teal);transform:translate(1px,1px) rotate(-1deg)}
+.tag-add:active{box-shadow:none;transform:translate(2px,2px) rotate(-1deg)}
+.tag-add:focus-visible{outline:none;box-shadow:2px 2px 0 var(--marker-yellow)}
+.tag-editor{display:inline-flex;align-items:center;gap:4px}
+.tag-input{
+  width:96px;font:inherit;font-size:11.5px;
+  padding:3px 7px;
+  border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
+  background:var(--paper);color:var(--ink);outline:none;
+  transition:box-shadow .18s ease,border-color .18s ease;
+}
+.tag-input::placeholder{color:var(--muted)}
+.tag-input:focus{border-color:var(--marker-red);box-shadow:2px 2px 0 var(--marker-yellow)}
+.tag-confirm{
+  font:inherit;font-size:11.5px;font-weight:700;line-height:1;
+  padding:4px 8px;
+  border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
+  background:rgba(255,217,61,.55);color:var(--ink);cursor:pointer;
+  transition:box-shadow .18s ease,transform .18s ease;
+}
+.tag-confirm:hover{box-shadow:2px 2px 0 var(--marker-teal);transform:translate(1px,1px)}
+@media (hover:none){
+  .tag-chip .tag-x{opacity:.8;transform:scale(.9)}
+}
 
 .ai-summary{
-  margin-top:10px;padding:10px 12px;
+  margin-top:10px;padding:11px 13px;
   background:rgba(78,205,196,.16);
   border:1.5px dashed var(--ink);border-radius:var(--radius-sm);
   font-size:13.5px;color:var(--ink);line-height:1.65;word-break:break-word;
   animation:fadeInUp .22s ease both
 }
-.ai-summary::before{content:"AI 提炼";display:block;font-size:11px;letter-spacing:.5px;color:var(--muted);margin-bottom:3px}
+.ai-summary::before{content:"AI 提炼";display:block;font-size:11px;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.ai-note__summary{margin:0;font-size:14px;font-weight:700;font-style:italic;line-height:1.65;color:var(--ink)}
+.ai-note__points{margin:9px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.ai-note__points li{position:relative;padding-left:21px;font-size:13.5px;line-height:1.6;color:var(--ink);transform:rotate(-.3deg)}
+.ai-note__points li::before{content:"✦";position:absolute;left:2px;top:0;font-weight:700;color:var(--marker-teal)}
+.ai-note__points li:nth-child(even)::before{content:"💡";font-size:12px}
+.ai-note__question{margin:10px 0 0;padding-top:8px;border-top:1.5px dashed var(--muted);font-size:12.5px;font-style:italic;line-height:1.6;color:var(--marker-red)}
 .ai-summary.loading{color:var(--muted)}
 .ai-summary.error{background:rgba(255,107,107,.16)}
 
@@ -315,10 +365,15 @@ input[type=text].sending::placeholder{color:transparent}
 .card-content{
   margin:8px 0 0;font-size:13.5px;color:var(--muted);
   word-break:break-word;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+}
+.card-content.clamped{
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+
 }
 .card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .card-actions .btn{font-size:13px;padding:6px 12px}
+.btn.expand{font-size:12.5px;padding:4px 10px;background:var(--paper-2);transform:rotate(-.6deg)}
+.btn.expand:hover{transform:translate(1px,1px) rotate(-.6deg)}
 .btn.ai{background:rgba(255,217,61,.5);box-shadow:2px 2px 0 var(--marker-yellow)}
 .btn.ai:hover{box-shadow:4px 4px 0 var(--marker-red)}
 
@@ -525,14 +580,32 @@ input[type=text].sending::placeholder{color:transparent}
 }
 .sky-btn:active{box-shadow:none;transform:translate(2px,2px) rotate(-1deg)}
 .sky-btn:focus-visible{outline:none;box-shadow:2px 2px 0 var(--marker-yellow)}
-.sky-help{
-  position:absolute;right:18px;bottom:14px;z-index:15;
-  max-width:calc(100vw - 36px);
-  text-align:right;line-height:1.6;
-  font-size:11.5px;font-style:italic;letter-spacing:.4px;
-  color:rgba(255,254,245,.42);
+.sky-note{
+  position:absolute;left:18px;bottom:14px;z-index:15;
+  max-width:min(260px,calc(100vw - 36px));
+  padding:10px 13px;
+  background:rgba(255,254,245,.34);
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
+  border:1.5px dashed rgba(255,254,245,.72);
+  border-radius:var(--radius-sm);
+  box-shadow:3px 3px 0 rgba(78,205,196,.55);
+  color:rgba(255,254,245,.94);
+  font-size:12px;line-height:1.7;letter-spacing:.2px;
   pointer-events:none;
-  text-shadow:0 1px 0 rgba(0,0,0,.5);
+  transform:rotate(-1deg);
+  animation:noteFloat 3.6s ease-in-out infinite;
+}
+.sky-note__title{
+  display:block;margin-bottom:5px;
+  font-size:11px;font-weight:700;letter-spacing:.6px;
+  color:rgba(255,217,61,.92);
+}
+.sky-note ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.sky-note li{white-space:nowrap}
+@keyframes noteFloat{
+  0%,100%{transform:translateY(0) rotate(-1deg)}
+  50%{transform:translateY(-6px) rotate(-1deg)}
 }
 .sky-tip{
   position:fixed;z-index:25;
@@ -621,7 +694,7 @@ body.sky-mode .monster{display:none}
   main{padding-bottom:120px}
   .sky-top{top:12px;left:12px;gap:8px}
   .sky-btn{font-size:12px;padding:6px 12px}
-  .sky-help{right:12px;bottom:10px}
+  .sky-note{left:12px;bottom:10px;font-size:11.5px;max-width:min(220px,calc(100vw - 24px))}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
@@ -647,7 +720,7 @@ body.sky-mode .monster{display:none}
 <main class="wrap" id="listView">
   <section class="compose">
     <div class="field">
-      <input id="input" type="text" placeholder="粘贴链接，或写下想消化的内容…" autocomplete="off" spellcheck="false">
+      <input id="input" type="text" placeholder="粘贴网页链接，或直接复制公众号/文章的长篇内容..." autocomplete="off" spellcheck="false">
       <button id="submit" class="btn primary" disabled>投递</button>
     </div>
     <p class="hint">数据仅保存在本机浏览器；点击「AI 提炼」时，链接卡片会先经 r.jina.ai 读取网页正文（失败则仅用标题），再连同内容发送给你自己配置的模型服务。</p>
@@ -696,7 +769,15 @@ body.sky-mode .monster{display:none}
   </div>
   <div class="sky-tip" id="skyTip" hidden></div>
 
-  <div class="sky-help">滚轮缩放 · 右键平移 · 左键划线切线 · 拖光点连线 · Alt+拖拽星团 · 点击光点聚焦</div>
+  <div class="sky-note" aria-hidden="true">
+    <span class="sky-note__title">🧭 操作指南</span>
+    <ul>
+      <li>🖱️ 左键拖动空白：平移</li>
+      <li>🖱️ 滚轮：缩放</li>
+      <li>🔗 拖拽光点：连接</li>
+      <li>✂️ Alt + 左键划线：切断</li>
+    </ul>
+  </div>
 </div>
 
 <div class="monster" id="monster" aria-hidden="true">
@@ -780,7 +861,7 @@ body.sky-mode .monster{display:none}
   var JINA_TIMEOUT=20000;
   var ARTICLE_MAX=3000;
   var MAX_INPUT=4000;
-  var SYSTEM_PROMPT='你是收藏内容消化助手。请阅读用户提供的文章正文或标题，只返回一个 JSON 对象，不要输出解释、不要使用代码块。格式：{"summary":"一句话摘要，不超过60字，直接给结论","tags":["标签1","标签2","标签3"]}。tags 必须是 3 个简短的中文标签，每个不超过 6 个字，不要带 # 号，不要重复。';
+  var SYSTEM_PROMPT='你是一个严谨的知识管理助手。请基于提供的文本生成结构化的总结。警告：必须严格忠于原文内容，绝对不要编造原文中不存在的信息。如果原文内容非常短少，请减少要点数量，或返回空数组。如果用户提供的文本是毫无意义的乱码或随机字母组合，请直接在 summary 中输出『这是一段无意义的乱码』，其余字段返回空数组。返回严格的 JSON 格式：{ "summary": "一句话总结", "keyPoints": ["要点1", "要点2"], "question": "启发思考题（如果没有足够信息，返回空字符串）", "tags": ["标签1"] }';
   var STATUS_TEXT={pending:'待消化',done:'已消化',archived:'归档'};
   var EMPTY_TEXT={
     pending:'还没有待消化的内容，投递第一条吧。',
@@ -862,6 +943,10 @@ body.sky-mode .monster{display:none}
   var isLinking=false;
   var linkPressClientX=0;
   var linkPressClientY=0;
+  var dragTargetId=null;
+  var dragMoved=false;
+  var dragPressClientX=0;
+  var dragPressClientY=0;
   var relationSourceId=null;
   var relationTargetId=null;
   var weaving=false;
@@ -930,6 +1015,17 @@ body.sky-mode .monster{display:none}
   function isHttpUrl(v){
     return /^https?:\/\//i.test(String(v||'').trim());
   }
+  function isLowQualityInput(v){
+    var raw=String(v||'').trim();
+    var t=raw.replace(/\s+/g,'');
+    if(t.length<5)return true;
+    if(!/[\u4e00-\u9fa5a-zA-Z0-9]/.test(t))return true;
+    if(/^\d+$/.test(t))return true;
+    if(/[a-zA-Z]{16,}/.test(raw))return true;
+    if(/^[a-zA-Z]+$/.test(raw)&&t.length>=10)return true;
+    if(/(asdf|sdfg|dfgh|fghj|ghjk|hjkl|qwer|wert|erty|rtyu|tyui|yuio|uiop|zxcv|xcvb|cvbn|vbnm|qwerty|asdfgh|qazwsx|wsxedc)/i.test(raw))return true;
+    return false;
+  }
   function extractWebArticle(url,timeoutMs){
     var ctrl=new AbortController();
     var timer=setTimeout(function(){ctrl.abort();},timeoutMs||JINA_TIMEOUT);
@@ -950,33 +1046,101 @@ body.sky-mode .monster{display:none}
   }
   function parseSummaryResult(text){
     var s=String(text||'').trim();
-    if(!s)return {summary:'',tags:[]};
+    if(!s)return {summary:'',keyPoints:[],question:'',tags:[]};
     var a=s.indexOf('{'),b=s.lastIndexOf('}');
     if(a>=0&&b>a){
       try{
         var obj=JSON.parse(s.slice(a,b+1));
         var summary=String(obj.summary||obj.aiSummary||'').trim();
+        var keyPoints=Array.isArray(obj.keyPoints)
+          ? obj.keyPoints.map(function(p){return String(p).trim();})
+              .filter(function(p){return !!p&&p.length<=80;})
+              .slice(0,6)
+          : [];
+        var question=String(obj.question||'').trim();
         var tags=Array.isArray(obj.tags)
           ? obj.tags.map(function(t){return String(t).replace(/^#+/,'').trim();})
               .filter(function(t){return !!t&&t.length<=12;})
               .slice(0,3)
           : [];
-        if(summary||tags.length)return {summary:summary||s,tags:tags};
+        if(summary||keyPoints.length||question||tags.length){
+          return {summary:summary,keyPoints:keyPoints,question:question,tags:tags};
+        }
+        return {summary:'',keyPoints:keyPoints,question:question,tags:tags};
       }catch(e){}
     }
-    return {summary:s,tags:[]};
+    return {summary:s,keyPoints:[],question:'',tags:[]};
   }
-  function updateCardTags(cardEl,tags){
-    if(!Array.isArray(tags)||!tags.length)return;
-    var html=tags.map(function(t){return '<span class="tag-chip">#'+esc(t)+'</span>';}).join('');
-    var el=cardEl.querySelector('.card-tags');
-    if(el){el.innerHTML=html;return;}
-    var anchor=cardEl.querySelector('.card-title');
-    if(!anchor)return;
-    el=document.createElement('div');
-    el.className='card-tags';
-    el.innerHTML=html;
-    anchor.insertAdjacentElement('afterend',el);
+  function tagChipHTML(tag,rec){
+    var isUser=Array.isArray(rec.userTags)&&rec.userTags.indexOf(tag)>=0;
+    return '<span class="tag-chip'+(isUser?' user':'')+'">#'+esc(tag)
+      +'<button class="tag-x" type="button" data-act="untag" data-tag="'+esc(tag)+'" title="删除标签">×</button></span>';
+  }
+  function tagItemsHTML(rec){
+    var tags=Array.isArray(rec.tags)?rec.tags:[];
+    return tags.map(function(t){return tagChipHTML(t,rec);}).join('')
+      +'<button class="tag-add" type="button" data-act="addtag">+ 贴标签</button>';
+  }
+  function cardTagsHTML(rec){
+    return '<div class="card-tags">'+tagItemsHTML(rec)+'</div>';
+  }
+  function renderCardTags(cardEl,rec){
+    var box=cardEl.querySelector('.card-tags');
+    if(!box)return;
+    box.innerHTML=tagItemsHTML(rec);
+  }
+  function addUserTag(rec,tag){
+    tag=String(tag||'').replace(/^#+/,'').trim();
+    if(!tag)return false;
+    if(tag.length>12)tag=tag.slice(0,12);
+    if(!Array.isArray(rec.tags))rec.tags=[];
+    if(rec.tags.indexOf(tag)>=0)return false;
+    if(!Array.isArray(rec.userTags))rec.userTags=[];
+    rec.tags.push(tag);
+    if(rec.userTags.indexOf(tag)<0)rec.userTags.push(tag);
+    rec.updatedAt=Date.now();
+    save();
+    return true;
+  }
+  function removeTag(rec,tag){
+    if(!Array.isArray(rec.tags)||rec.tags.indexOf(tag)<0)return false;
+    rec.tags=rec.tags.filter(function(t){return t!==tag;});
+    if(Array.isArray(rec.userTags))rec.userTags=rec.userTags.filter(function(t){return t!==tag;});
+    rec.updatedAt=Date.now();
+    save();
+    return true;
+  }
+  function syncTagsWithAi(rec,aiTags){
+    var user=Array.isArray(rec.userTags)?rec.userTags:[];
+    var merged=[];
+    user.forEach(function(t){if(merged.indexOf(t)<0)merged.push(t);});
+    (aiTags||[]).forEach(function(t){if(merged.indexOf(t)<0)merged.push(t);});
+    rec.tags=merged;
+    rec.userTags=user.filter(function(t){return merged.indexOf(t)>=0;});
+  }
+  function commitTag(rec,cardEl,editor){
+    if(!editor)return;
+    var input=editor.querySelector('.tag-input');
+    var added=input?addUserTag(rec,input.value):false;
+    if(added){
+      renderCardTags(cardEl,rec);
+      return;
+    }
+    if(editor.parentNode)editor.parentNode.removeChild(editor);
+  }
+  function aiNoteInnerHTML(data){
+    var html='';
+    var summary=data&&data.summary?String(data.summary).trim():'';
+    if(summary)html+='<p class="ai-note__summary">'+esc(summary)+'</p>';
+    var points=data&&Array.isArray(data.keyPoints)?data.keyPoints:[];
+    if(points.length){
+      html+='<ul class="ai-note__points">'+points.map(function(p){
+        return '<li>'+esc(String(p))+'</li>';
+      }).join('')+'</ul>';
+    }
+    var question=data&&data.question?String(data.question).trim():'';
+    if(question)html+='<p class="ai-note__question">🤔 思考：'+esc(question)+'</p>';
+    return html;
   }
 
   function load(){
@@ -1001,11 +1165,18 @@ body.sky-mode .monster{display:none}
           updatedAt:Number(c.updatedAt)||Number(c.createdAt)||Date.now(),
           aiSummary:typeof c.aiSummary==='string'?c.aiSummary:(typeof c.summary==='string'?c.summary:''),
           aiSummaryAt:Number(c.aiSummaryAt)||Number(c.summaryAt)||0,
+          aiPoints:Array.isArray(c.aiPoints)?c.aiPoints.filter(function(p){return typeof p==='string'&&p.trim();}).slice(0,6):[],
+          aiQuestion:typeof c.aiQuestion==='string'?c.aiQuestion:'',
           userNote:typeof c.userNote==='string'?c.userNote:'',
           tags:Array.isArray(c.tags)?c.tags:[],
+          userTags:Array.isArray(c.userTags)?c.userTags.filter(function(t){return typeof t==='string'&&t.trim();}):[],
           linkedIds:Array.isArray(c.linkedIds)?c.linkedIds:[]
         };
       }):[];
+      state.cards.forEach(function(c){
+        if(!Array.isArray(c.tags))c.tags=[];
+        c.userTags=(c.userTags||[]).filter(function(t){return c.tags.indexOf(t)>=0;});
+      });
       state.meta=(meta&&typeof meta==='object')
         ?{seqCounter:Number(meta.seqCounter)||1,version:Number(meta.version)||VERSION}
         :{seqCounter:1,version:VERSION};
@@ -1155,6 +1326,11 @@ body.sky-mode .monster{display:none}
     if(delivering)return;
     var v=raw.trim();
     if(!v)return;
+    if(!isHttpUrl(v)&&isLowQualityInput(v)){
+      skyToastShow('内容太短或疑似乱码，小怪物消化不了哦~');
+      submitBtn.disabled=!input.value.trim();
+      return;
+    }
     delivering=true;
     monsterReset();
     monsterWake();
@@ -1756,8 +1932,10 @@ body.sky-mode .monster{display:none}
       drawParticle(p,t,false,isLinking,pa,false);
     }
     if(isLinking){
-      var src=findParticle(linkSourceId);
+      var src=findParticle(draggingId);
       if(src)drawParticle(src,t,true,true,1,false);
+      var tgt=findParticle(dragTargetId);
+      if(tgt)drawParticle(tgt,t,true,false,1,false);
     }else if(focusP){
       drawParticle(focusP,t,false,false,1,true);
       if(hovered)drawParticle(hovered,t,true,false,related[hovered.id]?1:0.1,false);
@@ -1800,7 +1978,7 @@ body.sky-mode .monster{display:none}
     return best;
   }
   function updateCursor(){
-    canvas.style.cursor=(draggingId||isPanning)?'grabbing':((isLinking||slicing)?'crosshair':((hoveredId||hoveredEdgeId)?'pointer':'crosshair'));
+    canvas.style.cursor=(draggingId||isPanning)?'grabbing':((isLinking||slicing)?'crosshair':((hoveredId||hoveredEdgeId)?'pointer':'grab'));
   }
   function positionTip(sx,sy){
     var tw=skyTip.offsetWidth,th=skyTip.offsetHeight;
@@ -1854,6 +2032,7 @@ body.sky-mode .monster{display:none}
       hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
       slicing=false;sliceMoved=false;slicePoints=[];dragGroupOffsets=null;cutAnims=[];
+      dragTargetId=null;dragMoved=false;
       focusId=null;
       skyTip.hidden=true;
       sizeSky();
@@ -1867,6 +2046,7 @@ body.sky-mode .monster{display:none}
 hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
       slicing=false;sliceMoved=false;slicePoints=[];dragGroupOffsets=null;
+      dragTargetId=null;dragMoved=false;
       focusId=null;
       skyTip.hidden=true;
     }
@@ -1891,50 +2071,9 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
     if(canvas.setPointerCapture){
       try{canvas.setPointerCapture(e.pointerId);}catch(err){}
     }
-    /* 右键/中键：只负责拖动画布 */
-    if(e.button===2||e.button===1){
-      isPanning=true;
-      panStartX=e.clientX;
-      panStartY=e.clientY;
-      panStartPanX=panX;
-      panStartPanY=panY;
-      skyTip.hidden=true;
-      updateCursor();
-      return;
-    }
     var p=pickParticle(e.clientX,e.clientY);
-    if(p){
-      /* 按住光点：Alt 拖拽星团，普通拖拽连线 */
-      if(e.altKey){
-        draggingId=p.id;
-        p.dragging=true;
-        p.vx=0;p.vy=0;
-        dragOffX=(e.clientX-panX)/zoom-p.x;
-        dragOffY=(e.clientY-panY)/zoom-p.y;
-        dragGroupOffsets={};
-        var grp=groupContaining(p.id);
-        if(grp){
-          grp.forEach(function(m){
-            dragGroupOffsets[m.id]={dx:m.x-p.x,dy:m.y-p.y};
-          });
-        }
-      }else{
-        linkSourceId=p.id;
-        linkStartPos={x:p.x,y:p.y};
-        linkPointer={x:(e.clientX-panX)/zoom,y:(e.clientY-panY)/zoom};
-        isLinking=false;
-        linkPressClientX=e.clientX;
-        linkPressClientY=e.clientY;
-      }
-      hoveredId=p.id;
-      hoveredEdgeId=null;
-      skyTip.hidden=true;
-    }else{
-      /* 左键空白：进入划线待命，只有真正移动后才切断 */
-      if(focusId){
-        focusId=null;
-        if(reduceMotion)drawSky();
-      }
+    if(e.altKey){
+      /* Alt + 左键：划线切断（无论起点是否命中光点） */
       slicing=true;
       sliceMoved=false;
       slicePoints=[];
@@ -1945,6 +2084,41 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       sliceLastX=w0.x;
       sliceLastY=w0.y;
       slicePoints.push({x:w0.x,y:w0.y,t:performance.now()});
+      hoveredId=null;
+      hoveredEdgeId=null;
+      skyTip.hidden=true;
+    }else if(p){
+      /* 左键拖拽光点：移动本体（群组整体弹簧跟随），松手落到另一光点则建立连线 */
+      draggingId=p.id;
+      p.dragging=true;
+      p.vx=0;p.vy=0;
+      dragOffX=(e.clientX-panX)/zoom-p.x;
+      dragOffY=(e.clientY-panY)/zoom-p.y;
+      dragMoved=false;
+      dragPressClientX=e.clientX;
+      dragPressClientY=e.clientY;
+      dragTargetId=null;
+      dragGroupOffsets={};
+      var grp=groupContaining(p.id);
+      if(grp){
+        grp.forEach(function(m){
+          dragGroupOffsets[m.id]={dx:m.x-p.x,dy:m.y-p.y};
+        });
+      }
+      hoveredId=p.id;
+      hoveredEdgeId=null;
+      skyTip.hidden=true;
+    }else{
+      /* 左键拖拽空白：平移画布 */
+      if(focusId){
+        focusId=null;
+        if(reduceMotion)drawSky();
+      }
+      isPanning=true;
+      panStartX=e.clientX;
+      panStartY=e.clientY;
+      panStartPanX=panX;
+      panStartPanY=panY;
       hoveredId=null;
       hoveredEdgeId=null;
       skyTip.hidden=true;
@@ -1959,6 +2133,18 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
         p.x=Math.max(p.r,Math.min(worldW-p.r,(e.clientX-panX)/zoom-dragOffX));
         p.y=Math.max(p.r,Math.min(worldH-p.r,(e.clientY-panY)/zoom-dragOffY));
         p.vx=0;p.vy=0;
+        var mdx=e.clientX-dragPressClientX,mdy=e.clientY-dragPressClientY;
+        if(!dragMoved&&(mdx*mdx+mdy*mdy)>36)dragMoved=true;
+        var target=dragMoved?pickParticle(e.clientX,e.clientY):null;
+        if(target&&target.id!==draggingId){
+          dragTargetId=target.id;
+          linkStartPos={x:p.x,y:p.y};
+          linkPointer={x:target.x,y:target.y};
+          isLinking=true;
+        }else{
+          dragTargetId=null;
+          linkStartPos=null;linkPointer=null;isLinking=false;
+        }
       }
       if(reduceMotion){springFollowers();drawSky();}
       return;
@@ -1979,13 +2165,7 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       if(reduceMotion)drawSky();
       return;
     }
-    if(linkSourceId){
-      var mx2=e.clientX-linkPressClientX,my2=e.clientY-linkPressClientY;
-      if(!isLinking&&(mx2*mx2+my2*my2)>36)isLinking=true;
-      linkPointer={x:(e.clientX-panX)/zoom,y:(e.clientY-panY)/zoom};
-      updateCursor();
-      return;
-    }
+
     if(isPanning){
       panX=panStartPanX+(e.clientX-panStartX);
       panY=panStartPanY+(e.clientY-panStartY);
@@ -2000,29 +2180,29 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       slicing=false;
       sliceMoved=false;
       sliceCutCount=0;
-      if(reduceMotion){slicePoints=[];drawSky();}
+      slicePoints=[];
+      if(reduceMotion)drawSky();
       updateCursor();
       return;
     }
-    if(linkSourceId){
-      var source=linkSourceId;
-      if(isLinking){
-        var target=pickParticle(e.clientX,e.clientY);
-        if(target&&target.id!==source)openRelationModal(source,target.id);
-      }else{
+    if(draggingId){
+      var source=draggingId;
+      if(dragMoved&&dragTargetId&&dragTargetId!==source){
+        openRelationModal(source,dragTargetId);
+      }else if(!dragMoved){
         var hit=pickParticle(e.clientX,e.clientY);
         if(hit&&hit.id===source)focusId=(focusId===source)?null:source;
       }
-      linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
-      if(reduceMotion)drawSky();
-      updateHover(e.clientX,e.clientY);
-      return;
-    }
-    if(draggingId){
       var p=findParticle(draggingId);
       if(p)p.dragging=false;
       draggingId=null;
       dragGroupOffsets=null;
+      dragTargetId=null;
+      dragMoved=false;
+      linkStartPos=null;linkPointer=null;isLinking=false;
+      if(reduceMotion)drawSky();
+      updateHover(e.clientX,e.clientY);
+      return;
     }
     isPanning=false;
     updateHover(e.clientX,e.clientY);
@@ -2034,6 +2214,7 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       draggingId=null;
       dragGroupOffsets=null;
     }
+    dragTargetId=null;dragMoved=false;
     linkSourceId=null;linkStartPos=null;linkPointer=null;isLinking=false;
     slicing=false;sliceMoved=false;slicePoints=[];sliceCutCount=0;
     isPanning=false;
@@ -2047,7 +2228,7 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       updateCursor();
     }
   });
-  canvas.addEventListener('contextmenu',function(e){e.preventDefault();});
+
   canvas.addEventListener('wheel',function(e){
     if(view!=='sky')return;
     e.preventDefault();
@@ -2462,15 +2643,12 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       titleHTML=esc(c.title);
     }
 
-    var tagsHTML='';
-    if(Array.isArray(c.tags)&&c.tags.length){
-      tagsHTML='<div class="card-tags">'+c.tags.map(function(t){
-        return '<span class="tag-chip">#'+esc(t)+'</span>';
-      }).join('')+'</div>';
-    }
+    var tagsHTML=cardTagsHTML(c);
 
-    var aiHTML=c.aiSummary
-      ?'<div class="ai-summary">'+esc(c.aiSummary)+'</div>'
+    var aiData={summary:c.aiSummary,keyPoints:(c.aiPoints||[]),question:(c.aiQuestion||'')};
+    var hasAi=!!(aiData.summary||(aiData.keyPoints&&aiData.keyPoints.length)||aiData.question);
+    var aiHTML=hasAi
+      ?'<div class="ai-summary">'+aiNoteInnerHTML(aiData)+'</div>'
       :'<div class="ai-summary" hidden></div>';
     var noteHTML=c.userNote
       ?'<div class="user-note">'+esc(c.userNote)+'</div>'
@@ -2491,6 +2669,12 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
     }
 
     var showContent=!(c.type==='text'&&c.content.length<=40);
+    var isLongText=c.type==='text'&&c.content.length>150;
+    var contentHTML='';
+    if(showContent){
+      contentHTML='<p class="card-content'+(isLongText?' clamped':'')+'">'+esc(c.content)+'</p>'
+        +(isLongText?'<div class="card-expand"><button class="btn expand" type="button" data-act="expand" aria-expanded="false">展开阅读全文 ▼</button></div>':'');
+    }
 
     return '<article class="card" data-id="'+esc(c.id)+'">'
       +'<div class="card-head">'
@@ -2502,7 +2686,7 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       +tagsHTML
       +aiHTML
       +noteHTML
-      +(showContent?'<p class="card-content">'+esc(c.content)+'</p>':'')
+      +contentHTML
       +linksHTML
       +'<div class="card-actions">'+actions.join('')+'</div>'
       +'</article>';
@@ -2547,8 +2731,11 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       updatedAt:Date.now(),
       aiSummary:'',
       aiSummaryAt:0,
+      aiPoints:[],
+      aiQuestion:'',
       userNote:'',
       tags:[],
+      userTags:[],
       linkedIds:[]
     };
     state.cards.unshift(card);
@@ -2631,13 +2818,13 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
     var userContent;
     if(article){
       userContent='这是文章《'+titleText+'》的正文内容：\n\n'+article
-        +'\n\n请基于以上正文，为我生成一句话摘要（summary）和 3 个标签（tags）。';
+        +'\n\n请基于以上正文，严格按照要求输出 summary、keyPoints、question、tags。';
     }else if(limited){
       userContent='这是文章《'+titleText+'》的标题：'+titleText
-        +'。网页正文抓取受限，请仅基于标题，为我生成一句话摘要（summary）和 3 个标签（tags）。';
+        +'。网页正文抓取受限，请仅基于标题，严格按照要求输出 summary、keyPoints、question、tags。';
     }else{
       userContent='这是内容《'+titleText+'》：\n'+rec.content.slice(0,MAX_INPUT)
-        +'\n\n请基于以上内容，为我生成一句话摘要（summary）和 3 个标签（tags）。';
+        +'\n\n请基于以上内容，严格按照要求输出 summary、keyPoints、question、tags。';
     }
 
     try{
@@ -2671,14 +2858,17 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
 
       var parsed=parseSummaryResult(text);
       rec.aiSummary=parsed.summary;
+      rec.aiPoints=parsed.keyPoints;
+      rec.aiQuestion=parsed.question;
       rec.aiSummaryAt=Date.now();
-      if(parsed.tags.length)rec.tags=parsed.tags;
+      if(parsed.tags.length)syncTagsWithAi(rec,parsed.tags);
       save();
 
       box.hidden=false;
       box.className='ai-summary';
-      box.textContent=rec.aiSummary;
-      if(parsed.tags.length)updateCardTags(cardEl,parsed.tags);
+      box.innerHTML=aiNoteInnerHTML(parsed);
+      if(!box.innerHTML)box.hidden=true;
+      if(parsed.tags.length)renderCardTags(cardEl,rec);
       btn.textContent='✨ 重新提炼';
       setConfigState(limited?'网页抓取受限，仅基于标题完成提炼':'提炼完成，结果已保存到本机');
     }catch(err){
@@ -2758,6 +2948,36 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       openDeleteModal(id);
       return;
     }
+    if(act==='expand'){
+      var content=cardEl.querySelector('.card-content');
+      if(content){
+        var collapsed=content.classList.toggle('clamped');
+        btn.textContent=collapsed?'展开阅读全文 ▼':'收起 ▲';
+        btn.setAttribute('aria-expanded',collapsed?'false':'true');
+      }
+      return;
+    }
+    if(act==='addtag'){
+      if(cardEl.querySelector('.tag-editor'))return;
+      var tagsBox=cardEl.querySelector('.card-tags');
+      if(!tagsBox)return;
+      var editor=document.createElement('span');
+      editor.className='tag-editor';
+      editor.innerHTML='<input class="tag-input" type="text" maxlength="12" placeholder="输入标签…" autocomplete="off" spellcheck="false">'
+        +'<button class="tag-confirm" type="button" data-act="tag-save">确认</button>';
+      tagsBox.appendChild(editor);
+      var tagInput=editor.querySelector('.tag-input');
+      if(tagInput)tagInput.focus();
+      return;
+    }
+    if(act==='tag-save'){
+      commitTag(rec,cardEl,btn.closest('.tag-editor'));
+      return;
+    }
+    if(act==='untag'){
+      if(removeTag(rec,btn.dataset.tag))renderCardTags(cardEl,rec);
+      return;
+    }
     rec.status=act==='done'?'done':act==='archive'?'archived':'pending';
     rec.updatedAt=Date.now();
     cardEl.classList.add('leaving');
@@ -2765,6 +2985,23 @@ hoveredId=null;hoveredEdgeId=null;draggingId=null;isPanning=false;
       save();
       render();
     },180);
+  });
+
+  list.addEventListener('keydown',function(e){
+    var input=e.target.closest?e.target.closest('.tag-input'):null;
+    if(!input)return;
+    if(e.key==='Escape'){
+      var box=input.closest('.tag-editor');
+      if(box&&box.parentNode)box.parentNode.removeChild(box);
+      return;
+    }
+    if(e.key!=='Enter')return;
+    e.preventDefault();
+    var editor=input.closest('.tag-editor');
+    var cardEl=input.closest('.card');
+    if(!editor||!cardEl)return;
+    var rec=state.cards.find(function(c){return c.id===cardEl.dataset.id;});
+    if(rec)commitTag(rec,cardEl,editor);
   });
 
   tabs.addEventListener('click',function(e){
